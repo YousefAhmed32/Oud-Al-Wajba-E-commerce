@@ -1,3 +1,16 @@
-#root{
+/* #root{
    width: 100%;
+} */
+
+/* in global.css or tailwind.css */
+.bg-water {
+  background: radial-gradient(circle at center, rgba(0, 255, 255, 0.1) 0%, transparent 80%);
+  background-size: 200% 200%;
+  animation: moveWater 6s ease-in-out infinite;
+}
+
+@keyframes moveWater {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }

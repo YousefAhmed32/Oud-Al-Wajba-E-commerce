@@ -10,12 +10,13 @@ import { Textarea } from "../ui/textarea";
 import { Button } from "../ui/button";
 
 function CommonForm({
-    formControls,
-    formData,
-    setFormData,
-    onSubmit,
-    buttonText,
-    isBtnDisabled 
+  formControls,
+  formData,
+  setFormData,
+  onSubmit,
+  buttonText,
+  isBtnDisabled,
+  labelClassName = "text-black" // ✅ default to black if not provided
 }) {
   function renderInputByComponentType(getControlItem) {
     let element = null;
@@ -36,6 +37,7 @@ function CommonForm({
                 [getControlItem.name]: e.target.value,
               })
             }
+            className="text-black"
           />
         );
         break;
@@ -50,8 +52,9 @@ function CommonForm({
               })
             }
             value={value}
+            className="text-black"
           >
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="w-full text-black">
               <SelectValue placeholder={getControlItem.placeholder} />
             </SelectTrigger>
             <SelectContent>
@@ -79,6 +82,7 @@ function CommonForm({
                 [getControlItem.name]: e.target.value,
               })
             }
+            className="text-black"
           />
         );
         break;
@@ -97,6 +101,7 @@ function CommonForm({
                 [getControlItem.name]: e.target.value,
               })
             }
+            className="text-black"
           />
         );
         break;
@@ -110,18 +115,28 @@ function CommonForm({
         {Array.isArray(formControls) &&
           formControls.map((controlItem) => (
             <div className="grid w-full gap-1.5" key={controlItem.name}>
-              <label className="mb-1" htmlFor={controlItem.name}>
+              <label
+                htmlFor={controlItem.name}
+                className={`mb-1 text-sm font-medium ${labelClassName} ${controlItem.labelClassName || ''}`}
+ // ✅ apply color here
+              >
                 {controlItem.label}
               </label>
               {renderInputByComponentType(controlItem)}
             </div>
           ))}
       </div>
-      <Button disabled={isBtnDisabled} type="submit" className="mt-2 w-full">
+      <Button
+        disabled={isBtnDisabled}
+        type="submit"
+        className="mt-4 w-full bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500"
+      >
         {buttonText || "Submit"}
       </Button>
     </form>
   );
 }
+
+
 
 export default CommonForm;

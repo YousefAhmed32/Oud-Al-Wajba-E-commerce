@@ -18,6 +18,8 @@ import {
 } from "@/store/admin/product-slice";
 import { Fragment, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { PlusCircle, Pencil } from "lucide-react";
+
 
 const initialFormData = {
   image: null,
@@ -36,7 +38,6 @@ function AdminProducts() {
   const [imageFile, setImageFile] = useState(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState("");
   const [imageLoadingStatus, setImageLoadingState] = useState(false);
-
   const [currentEditId, setCurrentEditId] = useState(null);
 
   const { productList } = useSelector((state) => state.adminProducts);
@@ -56,16 +57,10 @@ function AdminProducts() {
           },
         })
       ).then((data) => {
-        console.log(data);
         if (data?.payload?.success) {
           dispatch(fetchAllProduct());
-          setFormData(initialFormData);
-          setOpenCreateProductDialog(false);
-          setCurrentEditId(null);
-          setImageFile(null);
-          toast({
-            title: "Product updated successfully",
-          });
+          resetForm();
+          toast({ title: "✅ Product updated successfully" });
         }
       });
     } else {
@@ -75,32 +70,30 @@ function AdminProducts() {
           image: uploadedImageUrl,
         })
       ).then((data) => {
-        console.log(data);
         if (data?.payload?.success) {
           dispatch(fetchAllProduct());
-          setImageFile(null);
-          setOpenCreateProductDialog(false);
-          setFormData(initialFormData);
-          toast({
-            title: "Product added successfully",
-          });
+          resetForm();
+          toast({ title: "✅ Product added successfully" });
         }
       });
     }
   }
 
+  function handleDelete(productId) {
+    dispatch(deleteProduct(productId)).then((data) => {
+      if (data?.payload?.success) {
+        dispatch(fetchAllProduct());
+        toast({ title: "🗑️ Product deleted successfully" });
+      }
+    });
+  }
 
-
-
-  function handleDelete(getCurrentProductId){
-      dispatch(deleteProduct(getCurrentProductId)).then((data)=>{
-        if(data?.payload?.success){
-          dispatch(fetchAllProduct())
-          toast({
-            title:' Product deleted successfully'
-          })
-        }
-      })
+  function resetForm() {
+    setFormData(initialFormData);
+    setOpenCreateProductDialog(false);
+    setCurrentEditId(null);
+    setImageFile(null);
+    setUploadedImageUrl("");
   }
 
   function isFormValid() {
@@ -110,67 +103,88 @@ function AdminProducts() {
   }
 
   useEffect(() => {
-    console.log(productList, uploadedImageUrl, "productList");
     dispatch(fetchAllProduct());
   }, [dispatch]);
 
   return (
     <Fragment>
-      <div className="flex   justify-end w-full mb-5">
-        <Button onClick={() => setOpenCreateProductDialog(true)}>
-          Add New Product
+      {/* Top Bar */}
+      <div className="flex justify-end w-full mb-6">
+        <Button
+          onClick={() => setOpenCreateProductDialog(true)}
+          className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold flex items-center gap-2 shadow-[0_0_12px_rgba(16,185,129,0.6)]"
+        >
+          <PlusCircle size={18} /> Add New Product
         </Button>
       </div>
-      <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-4">
-        {productList && productList.length > 0
-          ? productList.map((productItem) => (
-              <AdminProductTitle
-                setFormData={setFormData}
-                setOpenCreateProductDialog={setOpenCreateProductDialog}
-                setCurrentEditId={setCurrentEditId}
-                key={productItem._id}
-                product={productItem}
-                handleDelete={handleDelete}
-              />
-            ))
-          : null}
-      </div>
-      <Sheet
-        open={openCreateProductDialog}
-        onOpenChange={() => {
-          setOpenCreateProductDialog(false);
-          setCurrentEditId(null);
-          setFormData(initialFormData);
-        }}
-      >
-        <SheetContent side="right" className="overflow-auto">
-          <SheetHeader>
-            <SheetTitle className="block">
-              {currentEditId !== null ? "Edit Product" : "Add New Product"}
-            </SheetTitle>
-            <ProductImageUpload
-              imageFile={imageFile}
-              setImageFile={setImageFile}
-              uploadedImageUrl={uploadedImageUrl}
-              setUploadedImageUrl={setUploadedImageUrl}
-              setImageLoadingState={setImageLoadingState}
-              imageLoadingStatus={imageLoadingStatus}
-              isEditMode={currentEditId !== null}
-            />
-          </SheetHeader>
-          <div className="py-6">
-            <CommonForm
-              onSubmit={onSubmit}
-              formData={formData}
+
+      {/* Product Grid */}
+      <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-4">
+        {productList?.length > 0 &&
+          productList.map((productItem) => (
+            <AdminProductTitle
+              key={productItem._id}
+              product={productItem}
               setFormData={setFormData}
-              buttonText={currentEditId ? "Update" : "Add"}
-              formControls={addProductFormElements}
-              isBtnDisabled={!isFormValid()}
-              
+              setOpenCreateProductDialog={setOpenCreateProductDialog}
+              setCurrentEditId={setCurrentEditId}
+              handleDelete={handleDelete}
             />
-          </div>
-        </SheetContent>
-      </Sheet>
+          ))}
+      </div>
+
+      {/* Add/Edit Drawer */}
+   
+
+<Sheet open={openCreateProductDialog} onOpenChange={() => resetForm()}>
+  <SheetContent
+    side="right"
+    className="overflow-auto bg-gradient-to-b from-[#0B0F19] to-[#0E1425] text-white border-l border-emerald-500/30 shadow-[0_0_50px_rgba(16,185,129,0.2)]"
+  >
+    <SheetHeader className="border-b border-white/10 pb-4">
+      <SheetTitle className="text-xl font-semibold flex items-center gap-3 text-white">
+        {currentEditId !== null ? (
+          <>
+            <Pencil className="w-5 h-5 text-emerald-400" />
+            Edit Product
+          </>
+        ) : (
+          <>
+            <PlusCircle className="w-5 h-5 text-emerald-400" />
+            Add New Product
+          </>
+        )}
+      </SheetTitle>
+    </SheetHeader>
+
+    {/* Upload Section */}
+    <div className="mt-6">
+      <ProductImageUpload
+        imageFile={imageFile}
+        setImageFile={setImageFile}
+        uploadedImageUrl={uploadedImageUrl}
+        setUploadedImageUrl={setUploadedImageUrl}
+        setImageLoadingState={setImageLoadingState}
+        imageLoadingStatus={imageLoadingStatus}
+        isEditMode={currentEditId !== null}
+      />
+    </div>
+
+    {/* Form Section */}
+    <div className="py-6">
+      <CommonForm
+        onSubmit={onSubmit}
+        formData={formData}
+        setFormData={setFormData}
+        buttonText={currentEditId ? "Update Product" : "Add Product"}
+        formControls={addProductFormElements}
+        isBtnDisabled={!isFormValid()}
+        labelClassName="text-white"
+      />
+    </div>
+  </SheetContent>
+</Sheet>
+
     </Fragment>
   );
 }

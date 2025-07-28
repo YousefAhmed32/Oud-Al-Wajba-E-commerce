@@ -1,7 +1,7 @@
 import { Label } from "@radix-ui/react-label";
 import { useEffect, useRef } from "react";
 import { Input } from "../ui/input";
-import { UploadCloudIcon, FileIcon, XIcon } from "lucide-react"; // ✅ استيراد FileIcon
+import { UploadCloudIcon, FileIcon, XIcon, ImagePlus } from "lucide-react"; // ✅ استيراد FileIcon
 import { Button } from "../ui/button";
 import axios from "axios";
 import { Skeleton } from "../ui/skeleton";
@@ -14,6 +14,7 @@ function ProductImageUpload({
   setUploadedImageUrl,
   setImageLoadingState,
   isEditMode,
+  isCustomStyling = false
 }) {
   const inputRef = useRef(null);
 
@@ -42,7 +43,7 @@ function ProductImageUpload({
 
   async function uploadImageToCloudinary() {
     setImageLoadingState(true);
-    const data = new formData();
+    const data = new FormData();
     data.append("my_file", imageFile);
     const response = await axios.post(
       "http://localhost:5000/api/admin/products/image-upload",
@@ -63,14 +64,14 @@ function ProductImageUpload({
   }, [imageFile]);
 
   return (
-    <div className="w-full max-w-md mx-auto mt-4">
-      <Label className={`${isEditMode ? "opacity-60" : ""} text-lg font-semibold mb-2 block`}>Upload Image</Label>
+    <div className={`cursor-pointer w-full  mt-4 ${isCustomStyling ? '' : 'max-w-md mx-auto  '}`}>
+      <Label className={`${isEditMode ? "opacity-60" : ""} text-lg font-semibold mb-2 block`}><ImagePlus size={20} className="inline text-emerald-400" /> Upload Image</Label>
       <div
         onDragOver={handleDragOver}
         onDrop={handleDrop}
-        className="border-2 border-dashed rounded-lg p-4"
+        className="border-2 border-dashed rounded-lg p-4 cursor-pointer"
       >
-        {/* {youns} */}
+ 
         {uploadedImageUrl && (
           <div className="mt-4">
             <img
@@ -80,7 +81,7 @@ function ProductImageUpload({
             />
           </div>
         )}
-        {/* youns */}
+   
         <Input
           id="image-upload"
           type="file"
@@ -92,7 +93,7 @@ function ProductImageUpload({
         {!imageFile ? (
           <Label
             htmlFor="image-upload"
-            className={`${isEditMode ? "cursor-pointer" : ""} flex flex-col items-center justify-center h-36`}
+            className={`${isEditMode ? "cursor-pointer" : ""} flex flex-col items-center justify-center h-36 cursor-pointer`}
           >
             <UploadCloudIcon className="w-10 h-10 mb-2 text-muted-foreground" />
             <span>Drag & drop or click to upload image</span>
