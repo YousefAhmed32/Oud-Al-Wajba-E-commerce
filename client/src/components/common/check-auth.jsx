@@ -17,14 +17,24 @@ function CheckAuth({ isAuthenticated, user, children }) {
 
   // Block access to private routes if not authenticated
   if (!isAuthenticated && !isPublic) {
-    return <Navigate to="/auth/login" />;
+    // Save the intended path to redirect back after login
+    return <Navigate to="/auth/login" state={{ from: path }} replace />;
   }
 
   // Redirect authenticated users away from login/register
   if (isAuthenticated && (path.includes("/login") || path.includes("/register"))) {
+    // Check if there's a saved path to redirect to
+    const savedPath = location.state?.from;
+    
+    if (savedPath && !savedPath.includes("/auth")) {
+      // Redirect to the saved path
+      return <Navigate to={savedPath} replace />;
+    }
+    
+    // Default redirect based on user role
     return user?.role === "admin"
-      ? <Navigate to="/admin/analysis" />
-      : <Navigate to="/shop/home" />;
+      ? <Navigate to="/admin/analysis" replace />
+      : <Navigate to="/shop/home" replace />;
   }
 
   // Prevent normal users from accessing admin routes

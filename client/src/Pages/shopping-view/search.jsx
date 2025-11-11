@@ -1,5 +1,5 @@
 import { Input } from "@/components/ui/input";
-import { getSearchResults, resetSearchResults } from "@/store/shop/search-slice";
+import { fetchAllFilteredProducts, setProductDetails } from "@/store/shop/products-slice";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useSearchParams } from "react-router-dom";
@@ -10,17 +10,12 @@ import { fetchProductDetails } from "@/store/shop/products-slice";
 import ProductDetailsDialog from "@/components/shopping-view/product-details";
 
 function SearchProducts() {
-
-
-  const [keyword, setKeyword] = useState("");
   const [searchParams, setSearchParams] = useSearchParams();
+  const initialKeyword = searchParams.get("keyword") || "";
+  const [keyword, setKeyword] = useState(initialKeyword);
   const [openDetailsDialog,setOpenDetailsDialog]=useState(false)
-  const{productDetails} = useSelector(state=>state.shopProducts)
+  const{productDetails, productList, isLoading} = useSelector(state=>state.shopProducts)
   const dispatch = useDispatch();
-
-  const { searchResults, isLoading } = useSelector(
-    (state) => state.shopSearch
-  );
   const {cartItems} = useSelector(state=>state.shopCart)
   const {user} = useSelector(state=>state.auth)
   const {toast} = useToast()
@@ -59,19 +54,62 @@ function SearchProducts() {
     }
 
   useEffect(() => {
-    if (keyword.trim().length > 0) {
+    const trimmedKeyword = keyword.trim();
+    if (trimmedKeyword.length > 0) {
       const delay = setTimeout(() => {
-        setSearchParams(new URLSearchParams(`?keyword=${keyword}`));
-        dispatch(getSearchResults(keyword));
+        setSearchParams(new URLSearchParams(`?keyword=${encodeURIComponent(trimmedKeyword)}`));
+        dispatch(
+          fetchAllFilteredProducts({ 
+            filtersParams: { keyword: trimmedKeyword }, 
+            sortParams: 'price-lowtohigh' 
+          })
+        ).catch((error) => {
+          console.error("Search error:", error);
+          toast({
+            title: "Error searching products",
+            variant: "destructive",
+          });
+        });
       }, 1000);
 
       return () => clearTimeout(delay);
-    }else{
-        setSearchParams(new URLSearchParams(`?keyword=${keyword}`));
-
-        dispatch(resetSearchResults())
+    } else {
+        setSearchParams(new URLSearchParams());
     }
-  }, [keyword]);
+  }, [keyword, dispatch, setSearchParams, toast]);
+
+  // Sync keyword with URL params when they change externally
+  useEffect(() => {
+    const urlKeyword = searchParams.get("keyword") || "";
+    if (urlKeyword !== keyword) {
+      setKeyword(urlKeyword);
+    }
+  }, [searchParams]);
+
+  // Clear product details when component mounts to prevent showing product details dialog
+  useEffect(() => {
+    dispatch(setProductDetails());
+    setOpenDetailsDialog(false);
+  }, []); // Only run on mount
+
+  // Initial search when component mounts with keyword from URL
+  useEffect(() => {
+    const urlKeyword = searchParams.get("keyword");
+    if (urlKeyword && urlKeyword.trim().length > 0) {
+      dispatch(
+        fetchAllFilteredProducts({ 
+          filtersParams: { keyword: urlKeyword.trim() }, 
+          sortParams: 'price-lowtohigh' 
+        })
+      ).catch((error) => {
+        console.error("Search error:", error);
+        toast({
+          title: "Error searching products",
+          variant: "destructive",
+        });
+      });
+    }
+  }, []); // Only run on mount
 
  function handleGetProductDetails(getCurrentProductId) {
     dispatch(fetchProductDetails(getCurrentProductId));
@@ -94,17 +132,19 @@ function SearchProducts() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
-        {isLoading ? (
-          <h1 className="text-3xl">Loading...</h1>
-        ) : searchResults.length > 0 ? (
-          searchResults.map((item) => (
-            <ShoppingProductTitle handleAddToCart={handleAddToCart} key={item._id} product={item} />
-          ))
-        ) : (
-          <h1 className="text-5xl font-extrabold">No result found!</h1>
-        )}
-      </div>
+      {keyword.trim().length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+          {isLoading ? (
+            <h1 className="text-3xl">Loading...</h1>
+          ) : productList && productList.length > 0 ? (
+            productList.map((item) => (
+              <ShoppingProductTitle handleAddToCart={handleAddToCart} key={item._id} product={item} />
+            ))
+          ) : (
+            <h1 className="text-5xl font-extrabold">No result found!</h1>
+          )}
+        </div>
+      )}
       <ProductDetailsDialog
         open={openDetailsDialog}
         setOpen={setOpenDetailsDialog}

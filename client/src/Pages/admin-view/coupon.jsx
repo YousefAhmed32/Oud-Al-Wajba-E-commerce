@@ -1,57 +1,165 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { addCouponFormElements } from "@/config";
-import { addCoupon, fetchAllCoupons } from "@/store/admin/coupon";
+import { addCoupon, fetchAllCoupons, deleteCoupon } from "@/store/admin/coupon";
 import CommonForm from "../../components/common/form";
-import { Sparkles, PlusCircle, Ticket, Loader2 } from "lucide-react";
+import { Sparkles, PlusCircle, Ticket, Loader2, Trash2, Edit2, Copy, CheckCircle2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 function AdminCoupon() {
   const dispatch = useDispatch();
+  const { toast } = useToast();
   const [formData, setFormData] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(null);
 
   const { couponList = [], isLoading } = useSelector((state) => state.adminCoupon);
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
-  setSubmitting(true);
+    e.preventDefault();
+    
+    // Validation
+    if (!formData.code || !formData.discountType || !formData.discountValue || !formData.expiryDate) {
+      toast({
+        title: "خطأ",
+        description: "يرجى ملء جميع الحقول المطلوبة",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  await dispatch(
-    addCoupon({
-      code: formData.code,
-      discount: formData.discountType,
-      discountValue: Number(formData.discountValue),
-      expiryDate: formData.expiryDate,
-      usageLimit: Number(formData.usageLimit || 1),
-    })
-  );
+    // Validate discount value based on type
+    if (formData.discountType === 'percentage' && (formData.discountValue < 0 || formData.discountValue > 100)) {
+      toast({
+        title: "خطأ",
+        description: "نسبة الخصم يجب أن تكون بين 0 و 100",
+        variant: "destructive",
+      });
+      return;
+    }
 
-  await dispatch(fetchAllCoupons()); // ✅ refresh list immediately
+    setSubmitting(true);
 
-  setSubmitting(false);
-};
+    try {
+      // Map frontend format to backend format
+      const couponData = {
+        code: formData.code.toUpperCase().trim(),
+        discountType: formData.discountType === 'percentage' ? 'percent' : 'fixed',
+        amount: Number(formData.discountValue),
+        expiresAt: formData.expiryDate,
+        usageLimitGlobal: formData.usageLimit ? Number(formData.usageLimit) : null,
+        usageLimitPerUser: 1,
+        minOrderAmount: 0
+      };
+
+      const result = await dispatch(addCoupon(couponData));
+      
+      if (result.payload?.success) {
+        toast({
+          title: "نجح",
+          description: "تم إنشاء الكوبون بنجاح!",
+        });
+        // Reset form
+        setFormData({});
+        // Refresh list
+        await dispatch(fetchAllCoupons());
+      } else {
+        toast({
+          title: "خطأ",
+          description: result.payload?.message || 'فشل في إنشاء الكوبون',
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error creating coupon:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء إنشاء الكوبون",
+        variant: "destructive",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     dispatch(fetchAllCoupons());
   }, [dispatch]);
 
-  return (
-    <section className="px-4 sm:px-6 py-12 bg-gradient-to-b from-black via-zinc-900 to-black min-h-screen rounded-[24px]">
-      {/* Header */}
-      <h2 className="text-4xl font-extrabold text-center mb-12 flex items-center justify-center gap-3">
-        <Sparkles className="text-emerald-400 animate-pulse" size={32} />
-        <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent">
-          Manage Your Coupons Elegantly
-        </span>
-        <Sparkles className="text-emerald-400 animate-pulse" size={32} />
-      </h2>
+  const handleDeleteCoupon = async (couponId) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذا الكوبون؟')) {
+      return;
+    }
+    
+    try {
+      const result = await dispatch(deleteCoupon({ id: couponId }));
+      if (result.payload?.success) {
+        toast({
+          title: "نجح",
+          description: "تم حذف الكوبون بنجاح!",
+        });
+        await dispatch(fetchAllCoupons());
+      }
+    } catch (error) {
+      toast({
+        title: "خطأ",
+        description: "فشل في حذف الكوبون",
+        variant: "destructive",
+      });
+    }
+  };
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 max-w-7xl mx-auto">
-        {/* Form Section */}
-        <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
-          <h3 className="text-2xl font-semibold text-white mb-4 flex items-center gap-2">
-            <PlusCircle className="text-emerald-400" size={24} /> Create New Coupon
-          </h3>
+  const handleCopyCode = (code) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    toast({
+      title: "تم النسخ!",
+      description: `تم نسخ كود الكوبون "${code}"`,
+    });
+    setTimeout(() => setCopiedCode(null), 2000);
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'بدون انتهاء';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ar-EG', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  const isExpired = (expiryDate) => {
+    if (!expiryDate) return false;
+    return new Date(expiryDate) < new Date();
+  };
+
+  return (
+    <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8">
+        {/* Header */}
+        <div className="text-center">
+          <div className="flex items-center justify-center gap-4 mb-6">
+            <div className="p-4 rounded-2xl bg-primary/10 dark:bg-primary/20 backdrop-blur-sm">
+              <Ticket className="w-8 h-8 text-primary" />
+            </div>
+            <h1 className="text-4xl md:text-5xl font-bold text-foreground glow-text">
+              إدارة الكوبونات
+            </h1>
+          </div>
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            إنشاء وإدارة كوبونات الخصم للمتجر
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+          {/* Form Section */}
+          <div className="bg-card border border-border shadow-sm p-4 sm:p-6 rounded-xl space-y-4 sm:space-y-6">
+            <h3 className="text-xl sm:text-2xl font-semibold text-foreground mb-4 flex items-center gap-2">
+              <PlusCircle className="text-primary" size={24} /> 
+              إنشاء كوبون جديد
+            </h3>
 
           <CommonForm
             formControls={addCouponFormElements}
@@ -61,89 +169,154 @@ function AdminCoupon() {
             buttonText={
               submitting ? (
                 <span className="flex items-center gap-2">
-                  <Loader2 className="animate-spin" size={18} /> Adding...
+                  <Loader2 className="animate-spin" size={18} /> جاري الإضافة...
                 </span>
               ) : (
-                "Add Coupon"
+                "إضافة كوبون"
               )
             }
             isBtnDisabled={submitting}
-            labelClassName="text-white text-sm font-medium"
-            inputClassName="bg-white/10 text-white placeholder-white/60 border border-white/20 focus:ring-emerald-500 focus:border-emerald-500 rounded-lg px-4 py-2 w-full transition duration-150"
+            labelClassName="text-muted-foreground text-sm font-medium mb-2 block"
+            inputClassName="bg-background dark:bg-background border border-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary focus:border-primary rounded-lg px-4 py-2 w-full transition duration-150 [&[type='date']]:text-foreground [&[type='date']]:bg-background [&[type='date']]:dark:bg-background [&[type='date']]:dark:text-foreground [&[type='date']]:pr-10"
           />
 
-          {/* Preview */}
-          <div className="mt-6 bg-white/10 p-5 rounded-2xl border border-white/20 backdrop-blur shadow-inner">
-            <h4 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
-              <Ticket className="text-yellow-300" size={20} /> Preview
-            </h4>
-            <div className="space-y-1 text-white/90 text-sm">
-              <p>
-                <span className="text-gray-400">Code:</span>{" "}
-                <span className="font-bold text-green-400">{formData.code || "N/A"}</span>
-              </p>
-              <p>
-                <span className="text-gray-400">Discount:</span>{" "}
-                <span className="font-bold text-yellow-400">
-                  {formData.discountType === "percentage"
-                    ? `${formData.discountValue || 0}%`
-                    : `${formData.discountValue || 0} EGP`}{" "}
-                  off
-                </span>
-              </p>
-              <p>
-                <span className="text-gray-400">Expiry:</span>{" "}
-                {formData.expiryDate || "No date selected"}
-              </p>
+            {/* Preview */}
+            <div className="mt-6 bg-muted/50 dark:bg-muted/30 p-5 rounded-xl border border-border">
+              <h4 className="text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+                <Ticket className="text-primary" size={20} /> معاينة الكوبون
+              </h4>
+              <div className="space-y-2 text-muted-foreground text-sm">
+                <p>
+                  <span className="text-primary">الكود:</span>{" "}
+                  <span className="font-bold text-foreground">{formData.code?.toUpperCase() || "N/A"}</span>
+                </p>
+                <p>
+                  <span className="text-primary">الخصم:</span>{" "}
+                  <span className="font-bold text-primary">
+                    {formData.discountType === "percentage"
+                      ? `${formData.discountValue || 0}%`
+                      : `$${formData.discountValue || 0}`}
+                  </span>
+                </p>
+                <p>
+                  <span className="text-primary">تاريخ الانتهاء:</span>{" "}
+                  <span className="text-foreground">{formData.expiryDate ? formatDate(formData.expiryDate) : "لم يتم التحديد"}</span>
+                </p>
+                {formData.usageLimit && (
+                  <p>
+                    <span className="text-primary">حد الاستخدام:</span>{" "}
+                    <span className="text-foreground">{formData.usageLimit} مرة</span>
+                  </p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Coupon List Section */}
-        <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl p-6 sm:p-8 shadow-2xl">
-          <h3 className="text-2xl font-semibold text-white mb-6 flex items-center gap-2">
-            <Ticket className="text-emerald-400" size={24} /> All Coupons
-          </h3>
+          {/* Coupon List Section */}
+          <div className="bg-card border border-border shadow-sm p-6 rounded-xl">
+            <h3 className="text-2xl font-semibold text-foreground mb-6 flex items-center gap-2">
+              <Ticket className="text-primary" size={24} /> 
+              جميع الكوبونات ({couponList?.length || 0})
+            </h3>
 
-          {isLoading ? (
-            <p className="text-white flex items-center gap-2">
-              <Loader2 className="animate-spin" /> Loading...
-            </p>
-          ) : couponList.length === 0 ? (
-            <p className="text-gray-400 italic">No coupons found.</p>
-          ) : (
-            <ul className="space-y-4">
-              {couponList.map((coupon) => (
-                <li
-                  key={coupon._id}
-                  className="bg-white/10 hover:bg-white/20 transition-colors p-5 rounded-xl border border-white/20 text-white shadow flex justify-between items-center"
-                >
-                  <div>
-                    <p className="text-lg font-bold flex items-center gap-2">
-                      <Ticket size={18} className="text-emerald-400" /> {coupon.code}
-                    </p>
-                    <p className="text-sm text-yellow-300">
-                      {coupon.discount === "percentage"
-                        ? `${coupon.discountValue}% off`
-                        : `${coupon.discountValue} EGP off`}
-                    </p>
-                  </div>
-                  <div className="text-sm text-right text-gray-300">
-                    <p>
-                      Uses:{" "}
-                      <span className="text-white font-semibold">
-                        {coupon.usedCount}/{coupon.usageLimit}
-                      </span>
-                    </p>
-                    <p>Expires: {coupon.expiryDate?.slice(0, 10) || "No expiry"}</p>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="animate-spin text-primary" size={32} />
+                <span className="text-muted-foreground ml-3">جاري التحميل...</span>
+              </div>
+            ) : !couponList || couponList.length === 0 ? (
+              <div className="text-center py-12">
+                <Ticket className="text-muted-foreground/50 mx-auto mb-4" size={48} />
+                <p className="text-muted-foreground/70">لا توجد كوبونات</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {couponList.map((coupon) => {
+                  const expired = isExpired(coupon.expiresAt || coupon.expiryDate);
+                  const discountType = coupon.discountType || (coupon.discount === 'percentage' ? 'percent' : 'fixed');
+                  const discountValue = coupon.amount || coupon.discountValue || 0;
+                  
+                  return (
+                    <div
+                      key={coupon._id}
+                      className={`bg-muted/50 dark:bg-muted/30 hover:bg-muted/70 dark:bg-muted/50 transition-all p-5 rounded-xl border-2 ${
+                        expired 
+                          ? 'border-red-500/30 opacity-60' 
+                          : 'border-border hover:border-gold-950/50'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <Ticket 
+                              size={20} 
+                              className={expired ? 'text-red-400' : 'text-primary'} 
+                            />
+                            <p className="text-xl font-bold text-foreground flex items-center gap-2">
+                              {coupon.code}
+                              <button
+                                onClick={() => handleCopyCode(coupon.code)}
+                                className="p-1 hover:bg-primary/10 dark:bg-primary/20 rounded transition-colors"
+                                title="نسخ الكود"
+                              >
+                                {copiedCode === coupon.code ? (
+                                  <CheckCircle2 className="w-4 h-4 text-green-400" />
+                                ) : (
+                                  <Copy className="w-4 h-4 text-muted-foreground" />
+                                )}
+                              </button>
+                            </p>
+                            {expired && (
+                              <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs rounded-full border border-red-500/30">
+                                منتهي
+                              </span>
+                            )}
+                          </div>
+                          
+                          <div className="space-y-1 text-sm">
+                            <p className="text-muted-foreground">
+                              <span className="text-primary">الخصم:</span>{" "}
+                              <span className="font-bold text-primary">
+                                {discountType === 'percent' || discountType === 'percentage'
+                                  ? `${discountValue}%`
+                                  : `$${discountValue}`}
+                              </span>
+                            </p>
+                            <p className="text-muted-foreground">
+                              <span className="text-primary">الاستخدام:</span>{" "}
+                              <span className="text-foreground font-semibold">
+                                {coupon.usedCount || 0} / {coupon.usageLimitGlobal || coupon.usageLimit || '∞'}
+                              </span>
+                            </p>
+                            <p className="text-muted-foreground">
+                              <span className="text-primary">تاريخ الانتهاء:</span>{" "}
+                              <span className={expired ? 'text-red-400' : 'text-foreground'}>
+                                {formatDate(coupon.expiresAt || coupon.expiryDate)}
+                              </span>
+                            </p>
+                          </div>
+                        </div>
+                        
+                        <div className="flex flex-col gap-2">
+                          <Button
+                            onClick={() => handleDeleteCoupon(coupon._id)}
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-400 hover:text-red-300 hover:bg-red-500/20"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
-    </section>
+    </div>
   );
 }
 

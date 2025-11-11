@@ -1,12 +1,28 @@
-const express= require('express');
-const {handleImageUpload,addProduct,editProduct,deleteProduct,fetchAllProduct} = require('../../controllers/admin/products-controller');
-const { upload } = require('../../helper/cloudinary');
+const express = require('express');
+const {
+  handleImageUpload,
+  addProduct,
+  editProduct,
+  deleteProduct,
+  fetchAllProduct
+} = require('../../controllers/admin/products-controller');
+const { uploadSingleImage, uploadMultipleImages } = require('../../middleware/upload');
 
 const router = express.Router();
-router.post('/image-upload', upload.single('my_file'), handleImageUpload);
-router.post('/add',addProduct)
+
+// Single image upload endpoint (for backward compatibility)
+router.post('/image-upload', uploadSingleImage, handleImageUpload);
+
+// Create product with multiple images (up to 6)
+router.post('/add', uploadMultipleImages, addProduct);
+
+// Fetch all products
 router.get('/get', fetchAllProduct);
-router.put('/edit/:id', editProduct);   
+
+// Edit product (supports image updates)
+router.put('/edit/:id', uploadMultipleImages, editProduct);
+
+// Delete product
 router.delete('/delete/:id', deleteProduct);
 
 module.exports = router;

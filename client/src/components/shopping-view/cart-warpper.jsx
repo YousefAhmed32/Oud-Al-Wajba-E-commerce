@@ -25,13 +25,13 @@ function UserCartWrapper({ cartItems, setOpenCartSheet }) {
 
   return (
     <SheetContent
-      className="sm:max-w-md bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] 
-      text-white border border-blue-800 rounded-2xl shadow-[0_0_20px_#4f46e5]
+      className="sm:max-w-md luxury-gradient 
+      text-white border elegant-border rounded-2xl shadow-[0_0_20px_rgba(210,176,101,0.3)]
       backdrop-blur-lg animate-in slide-in-from-right p-6 transition-all duration-500"
     >
       <SheetHeader>
-        <SheetTitle className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 tracking-wide drop-shadow-lg">
-          🛒 Your Cart
+        <SheetTitle className="text-3xl font-extrabold text-gold-950 tracking-wide glow-text">
+          🛒 سلة التسوق
         </SheetTitle>
       </SheetHeader>
 
@@ -45,26 +45,29 @@ function UserCartWrapper({ cartItems, setOpenCartSheet }) {
             />
           ))
         ) : (
-          <p className="text-center text-gray-400 italic animate-pulse">Your cart is empty 🚀</p>
+          <p className="text-center text-gold-300 italic animate-pulse">سلة التسوق فارغة 🚀</p>
         )}
       </div>
 
-      <div className="mt-8 space-y-4 border-t border-gray-600 pt-4">
+      <div className="mt-8 space-y-4 border-t elegant-border pt-4">
         <div className="flex justify-between text-xl font-semibold text-white">
-          <span>Total</span>
-          <span className="text-green-400">${totalCartAmount.toFixed(2)}</span>
+          <span>المجموع</span>
+          <span className="text-gold-950">QR{totalCartAmount.toFixed(2)}</span>
         </div>
 
         <Button
-          onClick={() => {
-            navigate("/shop/checkout");
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
             setOpenCartSheet(false);
+            setTimeout(() => {
+              navigate("/shop/checkout");
+            }, 100);
           }}
-          className="w-full py-3 bg-gradient-to-r from-blue-700 via-purple-600 to-pink-600 
-          hover:from-pink-600 hover:to-blue-700 transition-all duration-500 text-white 
-          text-lg font-bold rounded-xl shadow-xl hover:scale-105 active:scale-95"
+          className="w-full py-3 bg-gold-950 hover:bg-gold-800 text-navy-950 
+          transition-all duration-500 text-lg font-bold rounded-xl shadow-xl hover:scale-105 active:scale-95 glow-gold"
         >
-          🚀 Proceed to Checkout
+          🚀 المتابعة للدفع
         </Button>
       </div>
     </SheetContent>

@@ -1,5 +1,5 @@
+import { motion } from "framer-motion";
 import ProductFiler from "@/components/shopping-view/filter";
-import ProductDetailsDialog from "@/components/shopping-view/product-details";
 import ShoppingProductTitle from "@/components/shopping-view/product-title";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,16 +12,11 @@ import {
 import { sortOption } from "@/config";
 import { useToast } from "@/hooks/use-toast";
 import { addToCart, fetchCartItems } from "@/store/shop/cart-slice";
-import {
-  fetchAllFilteredProducts,
-  fetchProductDetails,
-} from "@/store/shop/products-slice";
-import { ArrowUpDownIcon } from "lucide-react";
+import { fetchAllFilteredProducts } from "@/store/shop/products-slice";
+import { ArrowUpDownIcon, Grid3x3, Sparkles, Package } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useSearchParams } from "react-router-dom";
-
-//*******  fetch list of products  ********* */
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 function createSearchParamsHelper(filterParams) {
   const queryParams = [];
@@ -29,8 +24,9 @@ function createSearchParamsHelper(filterParams) {
   for (const [key, value] of Object.entries(filterParams)) {
     if (Array.isArray(value) && value.length > 0) {
       const paramValue = value.join(",");
-
       queryParams.push(`${key}=${encodeURIComponent(paramValue)}`);
+    } else if (value !== null && value !== undefined && value !== '') {
+      queryParams.push(`${key}=${encodeURIComponent(value)}`);
     }
   }
   return queryParams.join("&");
@@ -38,20 +34,18 @@ function createSearchParamsHelper(filterParams) {
 
 function ShoppingListing() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { toast } = useToast();
   const { user } = useSelector((state) => state.auth);
   const { cartItems } = useSelector((state) => state.shopCart);
 
-  const { productList, productDetails } = useSelector((state) => state.shopProducts);
+  const { productList, priceRange: globalPriceRange, isLoading } = useSelector((state) => state.shopProducts);
 
   const [filters, serFilters] = useState({});
   const [sort, serSort] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
   const categorySearchParams = searchParams.get('category')
-    
-  console.log(filters, searchParams.toString(), "filters");
 
   useEffect(() => {
     if (filters !== null && sort !== null)
@@ -59,12 +53,6 @@ function ShoppingListing() {
         fetchAllFilteredProducts({ filtersParams: filters, sortParams: sort })
       );
   }, [dispatch, sort, filters]);
-
-  useEffect(() => {
-    if (productDetails) {
-      setOpenDetailsDialog(true);
-    }
-  }, [productDetails]);
 
   useEffect(() => {
     if (filters && Object.keys(filters).length > 0) {
@@ -98,13 +86,30 @@ function ShoppingListing() {
     sessionStorage.setItem("filters", JSON.stringify(cpyFilters));
   }
 
-  function handleGetProductDetails(getCurrentProductId) {
-    dispatch(fetchProductDetails(getCurrentProductId));
+  function handlePriceChange(priceRange) {
+    const cpyFilters = { ...filters };
+    
+    if (globalPriceRange && 
+        (priceRange.minPrice !== globalPriceRange.minPrice || 
+         priceRange.maxPrice !== globalPriceRange.maxPrice)) {
+      cpyFilters.minPrice = priceRange.minPrice;
+      cpyFilters.maxPrice = priceRange.maxPrice;
+    } else {
+      delete cpyFilters.minPrice;
+      delete cpyFilters.maxPrice;
+    }
+
+    serFilters(cpyFilters);
+    sessionStorage.setItem("filters", JSON.stringify(cpyFilters));
   }
 
+  function handleGetProductDetails(getCurrentProductId) {
+    if (getCurrentProductId) {
+      navigate(`/shop/product/${getCurrentProductId}`);
+    }
+  }
 
   function handleAddToCart(getCurrentProductId , getTotalStock) {
-    console.log(cartItems);
     let getCartItems = cartItems.items || []
     if(getCartItems.length){
       const indexOfCurrentItem=getCartItems.findIndex(item=>item.productId === getCurrentProductId)
@@ -119,7 +124,6 @@ function ShoppingListing() {
           return
         }
       }
-         
     }
 
     dispatch(
@@ -128,11 +132,10 @@ function ShoppingListing() {
       if (data?.payload?.success) {
         dispatch(fetchCartItems(user?.id))
          toast({
-            title: "Product is add to cart",
+            title: "تمت إضافة المنتج إلى السلة",
+            description: "تمت إضافة المنتج بنجاح"
           });
       }
-
-      console.log(data,"data listing yousef");
     });
   }
 
@@ -141,66 +144,138 @@ function ShoppingListing() {
     serFilters(JSON.parse(sessionStorage.getItem("filters")) || {});
   }, [categorySearchParams]);
 
-  console.log(productList, "productList ");
-   useEffect(() => {
-    if (productDetails !== null) setOpenDetailsDialog(true);
-  }, [productDetails]);
-  // console.log(productDetails, "productDetails ");
-
   return (
-    <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-6 md:p-6">
-      <ProductFiler filters={filters} handleFilters={handleFilters} />
-      <div className="bg-background w-full rounded-lg shadow-sm">
-        <div className="p-4 border-b flex items-center justify-between">
-          <h2 className="text-lg font-extrabold">All Product</h2>
-          <div className="flex items-center gap-3">
-            <span className="text-muted-foreground">
-              {productList?.length} Products
-            </span>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-1"
-                >
-                  <ArrowUpDownIcon className="h-4 w-4" />
-                  <span>Sort by</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-[200px]">
-                <DropdownMenuRadioGroup value={sort} onValueChange={handleSort}>
-                  {sortOption.map((sortItems) => (
-                    <DropdownMenuRadioItem
-                      value={sortItems.id}
-                      key={sortItems.id}
-                    >
-                      {sortItems.label}
-                    </DropdownMenuRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-navy-950 dark:via-black dark:to-navy-950">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6 lg:gap-8">
+          {/* Filter Sidebar */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5 }}
+            className="lg:sticky lg:top-6 lg:h-fit"
+          >
+            <ProductFiler 
+              filters={filters} 
+              handleFilters={handleFilters} 
+              handlePriceChange={handlePriceChange}
+            />
+          </motion.div>
+
+          {/* Products Section */}
+          <div className="space-y-6">
+            {/* Header Section */}
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="bg-white dark:bg-gradient-to-br dark:from-navy-950/90 dark:to-black/90 backdrop-blur-xl rounded-2xl border border-gold-500/20 shadow-lg dark:shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-6"
+            >
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-xl bg-gradient-to-br from-gold-500/20 to-gold-600/10 border border-gold-500/30">
+                    <Package className="w-6 h-6 text-gold-500 dark:text-gold-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-gold-600 via-gold-500 to-gold-600 dark:from-gold-400 dark:via-gold-300 dark:to-gold-400 bg-clip-text text-transparent">
+                      جميع المنتجات
+                    </h2>
+                    <p className="text-sm text-gray-600 dark:text-gold-300/70 mt-1">
+                      اكتشف مجموعتنا المميزة من العطور الفاخرة
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-4 w-full sm:w-auto">
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gold-500/10 dark:bg-gold-500/20 border border-gold-500/30">
+                    <Sparkles className="w-4 h-4 text-gold-600 dark:text-gold-400" />
+                    <span className="text-sm font-semibold text-gold-700 dark:text-gold-300">
+                      {productList?.length || 0} منتج
+                    </span>
+                  </div>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2 bg-white dark:bg-navy-900/50 border-2 border-gold-500/30 dark:border-gold-500/40 text-gold-700 dark:text-gold-300 hover:bg-gold-50 dark:hover:bg-gold-500/10 hover:border-gold-500/50 transition-all duration-300 shadow-sm hover:shadow-md"
+                      >
+                        <ArrowUpDownIcon className="h-4 w-4" />
+                        <span className="font-semibold">ترتيب</span>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-[220px] bg-white dark:bg-navy-900 border border-gold-500/20 shadow-xl">
+                      <DropdownMenuRadioGroup value={sort} onValueChange={handleSort}>
+                        {sortOption.map((sortItems) => (
+                          <DropdownMenuRadioItem
+                            value={sortItems.id}
+                            key={sortItems.id}
+                            className="hover:bg-gold-50 dark:hover:bg-gold-500/10 cursor-pointer focus:bg-gold-50 dark:focus:bg-gold-500/10"
+                          >
+                            {sortItems.label}
+                          </DropdownMenuRadioItem>
+                        ))}
+                      </DropdownMenuRadioGroup>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Products Grid */}
+            {isLoading ? (
+              <div className="flex items-center justify-center py-20">
+                <div className="text-center">
+                  <div className="relative">
+                    <div className="animate-spin rounded-full h-16 w-16 border-4 border-gray-200 dark:border-navy-700 mx-auto mb-4"></div>
+                    <div className="animate-spin rounded-full h-16 w-16 border-4 border-gold-500 border-t-transparent absolute top-0 left-1/2 transform -translate-x-1/2"></div>
+                  </div>
+                  <p className="text-gold-600 dark:text-gold-400 font-semibold mt-4">جاري تحميل المنتجات...</p>
+                </div>
+              </div>
+            ) : productList && productList.length > 0 ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+              >
+                {productList.map((productItem, index) => (
+                  <motion.div
+                    key={productItem.id || productItem._id || index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4, delay: index * 0.05 }}
+                  >
+                    <ShoppingProductTitle
+                      handleGetProductDetails={handleGetProductDetails}
+                      product={productItem}
+                      handleAddToCart={handleAddToCart}
+                    />
+                  </motion.div>
+                ))}
+              </motion.div>
+            ) : (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="col-span-full flex flex-col items-center justify-center py-20 text-center bg-white dark:bg-gradient-to-br dark:from-navy-950/90 dark:to-black/90 backdrop-blur-xl rounded-2xl border border-gold-500/20 shadow-lg"
+              >
+                <div className="p-6 rounded-full bg-gold-500/10 dark:bg-gold-500/20 mb-6">
+                  <Package className="w-16 h-16 text-gold-500 dark:text-gold-400" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+                  لا توجد منتجات
+                </h3>
+                <p className="text-gray-600 dark:text-gold-300/70 text-sm max-w-md">
+                  جرب تعديل الفلاتر للعثور على ما تبحث عنه
+                </p>
+              </motion.div>
+            )}
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-4 bg-black">
-          {productList && productList.length > 0
-            ? productList.map((productItem, index) => (
-                <ShoppingProductTitle
-                  handleGetProductDetails={handleGetProductDetails}
-                  key={productItem.id || productItem._id || index}
-                  product={productItem}
-                  handleAddToCart={handleAddToCart}
-                />
-              ))
-            : null}
-        </div>
       </div>
-      <ProductDetailsDialog
-        open={openDetailsDialog}
-        setOpen={setOpenDetailsDialog}
-        productDetails={productDetails}
-      />
     </div>
   );
 }

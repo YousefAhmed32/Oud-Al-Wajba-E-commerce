@@ -40,9 +40,22 @@ const getAdminDashboardSummary = async (req, res) => {
     }
 
     const userDateFilter = { createdAt: { $gte: startDate, $lte: now } };
-    const orderDateFilter = { orderDate: { $gte: startDate, $lte: now } };
+    const orderDateFilter = { 
+      $or: [
+        { orderDate: { $gte: startDate, $lte: now } },
+        { createdAt: { $gte: startDate, $lte: now } }
+      ]
+    };
     const productDateFilter = { createdAt: { $gte: startDate, $lte: now } };
 
+    // Get totals without date filter (for overall counts)
+    const [totalUsersAll, totalOrdersAll, totalProductsAll] = await Promise.all([
+      User.countDocuments({}),
+      Orders.countDocuments({}),
+      Products.countDocuments({}),
+    ]);
+
+    // Get totals with date filter (for timeframe-specific counts)
     const [totalUsers, totalOrders, totalProducts] = await Promise.all([
       User.countDocuments(userDateFilter),
       Orders.countDocuments(orderDateFilter),
@@ -53,17 +66,41 @@ const getAdminDashboardSummary = async (req, res) => {
 
     const [revenueAgg, usersAgg, ordersAgg, productsAgg] = await Promise.all([
       Orders.aggregate([
-        { $match: { paymentStatus: "paid", ...orderDateFilter } },
+        { 
+          $match: { 
+            $and: [
+              {
+                $or: [
+                  { "payment.status": "approved" },
+                  { paymentStatus: "paid" },
+                  { paymentStatus: "approved" },
+                  // Include delivered orders (especially COD orders that are delivered)
+                  { orderStatus: "delivered" }
+                ]
+              },
+              orderDateFilter
+            ]
+          } 
+        },
         {
           $group: {
             _id: {
               $dateToString: {
                 format: dateFormat,
-                date: "$orderDate",
+                date: { $ifNull: ["$orderDate", "$createdAt"] },
                 timezone
               },
             },
-            revenue: { $sum: "$totalAmount" },
+            revenue: { 
+              $sum: { 
+                $ifNull: [
+                  "$total", 
+                  "$totalAmount", 
+                  "$totalAfterDiscount",
+                  0
+                ] 
+              } 
+            },
           },
         },
         { $sort: { _id: 1 } },
@@ -85,13 +122,15 @@ const getAdminDashboardSummary = async (req, res) => {
         { $sort: { _id: 1 } },
       ]),
       Orders.aggregate([
-        { $match: orderDateFilter },
+        { 
+          $match: orderDateFilter
+        },
         {
           $group: {
             _id: {
               $dateToString: {
                 format: dateFormat,
-                date: "$orderDate",
+                date: { $ifNull: ["$orderDate", "$createdAt"] },
                 timezone
               },
             },
@@ -119,6 +158,45 @@ const getAdminDashboardSummary = async (req, res) => {
     ]);
 
     const fullChartData = [];
+    
+    // Create maps for faster lookup
+    const revenueMap = new Map();
+    revenueAgg.forEach(item => {
+      if (item._id) {
+        const key = String(item._id).trim();
+        revenueMap.set(key, Number(item.revenue) || 0);
+        revenueMap.set(String(item._id), Number(item.revenue) || 0);
+      }
+    });
+    
+    const usersMap = new Map();
+    usersAgg.forEach(item => {
+      if (item._id) {
+        const key = String(item._id).trim();
+        usersMap.set(key, Number(item.count) || 0);
+        usersMap.set(String(item._id), Number(item.count) || 0);
+      }
+    });
+    
+    const ordersMap = new Map();
+    ordersAgg.forEach(item => {
+      if (item._id) {
+        const key = String(item._id).trim();
+        ordersMap.set(key, Number(item.count) || 0);
+        ordersMap.set(String(item._id), Number(item.count) || 0);
+      }
+    });
+    
+    const productsMap = new Map();
+    productsAgg.forEach(item => {
+      if (item._id) {
+        const key = String(item._id).trim();
+        productsMap.set(key, Number(item.count) || 0);
+        productsMap.set(String(item._id), Number(item.count) || 0);
+      }
+    });
+    
+    // Generate chart data for the full range
     for (let i = 0; i < rangeCount; i++) {
       let current;
       if (timeframe === "monthly" || timeframe === "weekly") {
@@ -129,33 +207,203 @@ const getAdminDashboardSummary = async (req, res) => {
         current = moment(startDate).add(i, "minutes");
       } else if (timeframe === "yearly" || timeframe === "all") {
         current = moment(startDate).add(i, "months");
+      } else {
+        current = moment(startDate).add(i, "days");
       }
 
-      const label = current.format(
-        timeframe === "hour" ? "HH:mm" :
-        timeframe === "daily" ? "HH:00" :
-        (timeframe === "yearly" || timeframe === "all") ? "YYYY-MM" :
-        "YYYY-MM-DD"
-      );
+      // Format label to match MongoDB dateToString format exactly
+      let label;
+      if (timeframe === "hour") {
+        label = current.format("HH:mm");
+      } else if (timeframe === "daily") {
+        label = current.format("HH:00");
+      } else if (timeframe === "yearly" || timeframe === "all") {
+        label = current.format("YYYY-MM");
+      } else {
+        label = current.format("YYYY-MM-DD");
+      }
+
+      // Try to find matching data - check all possible variations
+      let revenueValue = 0;
+      
+      // Try direct match first
+      revenueValue = revenueMap.get(label) || revenueMap.get(label.trim()) || 0;
+      
+      // If still no match, try date-based comparison
+      if (revenueValue === 0 && revenueAgg.length > 0) {
+        for (const rev of revenueAgg) {
+          if (!rev._id || !rev.revenue) continue;
+          
+          const revKey = String(rev._id).trim();
+          
+          // Try exact string match first
+          if (revKey === label || revKey === label.trim()) {
+            revenueValue = Number(rev.revenue) || 0;
+            break;
+          }
+          
+          // Try date comparison
+          try {
+            const revDate = moment(revKey, [
+              "YYYY-MM-DD",
+              "YYYY-MM",
+              "HH:mm",
+              "HH:00"
+            ], true);
+            
+            if (revDate.isValid() && current) {
+              let isMatch = false;
+              
+              if (timeframe === "hour") {
+                isMatch = revDate.isSame(current, "minute");
+              } else if (timeframe === "daily") {
+                isMatch = revDate.isSame(current, "hour");
+              } else if (timeframe === "yearly" || timeframe === "all") {
+                isMatch = revDate.isSame(current, "month");
+              } else {
+                isMatch = revDate.isSame(current, "day");
+              }
+              
+              if (isMatch) {
+                revenueValue = Number(rev.revenue) || 0;
+                break;
+              }
+            }
+          } catch (e) {
+            continue;
+          }
+        }
+      }
 
       fullChartData.push({
         label,
-        revenue: revenueAgg.find((d) => d._id === label)?.revenue || 0,
-        users: usersAgg.find((d) => d._id === label)?.count || 0,
-        orders: ordersAgg.find((d) => d._id === label)?.count || 0,
-        products: productsAgg.find((d) => d._id === label)?.count || 0,
+        revenue: Number(revenueValue) || 0,
+        users: Number(usersMap.get(label) || usersMap.get(label.trim()) || 0),
+        orders: Number(ordersMap.get(label) || ordersMap.get(label.trim()) || 0),
+        products: Number(productsMap.get(label) || productsMap.get(label.trim()) || 0),
       });
     }
 
-    const totalRevenue = revenueAgg.reduce((sum, r) => sum + r.revenue, 0);
+    // Debug logging
+    console.log('\n=== Revenue Analysis Debug ===');
+    console.log('Timeframe:', timeframe);
+    console.log('Date Format:', dateFormat);
+    console.log('Revenue Aggregation Count:', revenueAgg.length);
+    if (revenueAgg.length > 0) {
+      console.log('First 3 Revenue Agg Items:', revenueAgg.slice(0, 3).map(r => ({ 
+        _id: r._id, 
+        revenue: r.revenue 
+      })));
+    } else {
+      console.log('⚠️ No revenue aggregation results found!');
+    }
+    
+    const totalChartRevenue = fullChartData.reduce((sum, d) => sum + (Number(d.revenue) || 0), 0);
+    const totalAggRevenue = revenueAgg.reduce((sum, r) => sum + (Number(r.revenue) || 0), 0);
+    
+    console.log('Chart Data Generated:', fullChartData.length, 'items');
+    const nonZeroRevenue = fullChartData.filter(d => d.revenue > 0);
+    console.log('Non-zero revenue entries:', nonZeroRevenue.length);
+    if (nonZeroRevenue.length > 0) {
+      console.log('Sample non-zero entries:', nonZeroRevenue.slice(0, 3));
+    } else {
+      console.log('⚠️ No revenue data in chart!');
+      console.log('Sample chart labels:', fullChartData.slice(0, 5).map(d => d.label));
+      console.log('Sample revenue agg keys:', revenueAgg.slice(0, 5).map(r => r._id));
+    }
+    console.log('Total Revenue from Aggregation:', totalAggRevenue);
+    console.log('Total Revenue in Chart Data:', totalChartRevenue);
+    console.log('================================\n');
+
+    const totalRevenue = totalAggRevenue;
+
+    // Calculate revenue by payment status (without date filter for overall totals)
+    const [pendingRevenueResult, rejectedRevenueResult, approvedRevenueResult] = await Promise.all([
+      // Pending/Awaiting Approval Revenue
+      Orders.aggregate([
+        {
+          $match: {
+            $and: [
+              {
+                $or: [
+                  { "payment.status": "pending" },
+                  { "payment.status": "awaiting_admin_approval" },
+                  { paymentStatus: "pending" },
+                  { orderStatus: "pending" }
+                ]
+              },
+              // Exclude delivered orders from pending (they should be approved)
+              { orderStatus: { $ne: "delivered" } }
+            ]
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: { $ifNull: ["$totalAmount", "$total", 0] } }
+          }
+        }
+      ]),
+      // Rejected Revenue
+      Orders.aggregate([
+        {
+          $match: {
+            $or: [
+              { "payment.status": "rejected" },
+              { orderStatus: "rejected" },
+              { orderStatus: "cancelled" }
+            ]
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: { $ifNull: ["$totalAmount", "$total", 0] } }
+          }
+        }
+      ]),
+      // Approved Revenue (including delivered orders)
+      Orders.aggregate([
+        {
+          $match: {
+            $or: [
+              { "payment.status": "approved" },
+              { paymentStatus: "paid" },
+              { paymentStatus: "approved" },
+              { orderStatus: "delivered" }, // Include delivered orders as approved revenue
+              { orderStatus: "completed" }
+            ]
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: { $ifNull: ["$totalAmount", "$total", 0] } }
+          }
+        }
+      ])
+    ]);
+
+    const pendingRevenue = pendingRevenueResult[0]?.total || 0;
+    const rejectedRevenue = rejectedRevenueResult[0]?.total || 0;
+    const approvedRevenue = approvedRevenueResult[0]?.total || 0;
 
     res.status(200).json({
       success: true,
       data: {
-        totalUsers,
-        totalOrders,
-        totalProducts,
-        totalRevenue,
+        totalUsers: totalUsersAll, // Use overall count
+        totalOrders: totalOrdersAll, // Use overall count
+        totalProducts: totalProductsAll, // Use overall count
+        totalRevenue: approvedRevenue, // Use overall approved revenue
+        pendingRevenue: pendingRevenue,
+        rejectedRevenue: rejectedRevenue,
+        // Timeframe-specific data for growth calculations
+        timeframeData: {
+          totalUsers,
+          totalOrders,
+          totalProducts,
+          totalRevenue,
+        },
         chartData: fullChartData,
       },
     });

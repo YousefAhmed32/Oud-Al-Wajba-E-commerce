@@ -1,60 +1,28 @@
 import {
-  Airplay,
-  BabyIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
-  CloudLightningIcon,
-  Codepen,
-  Figma,
-  Heater,
-  Images,
-  Shirt,
-  ShirtIcon,
-  ShoppingBasket,
-  UmbrellaIcon,
-  WashingMachine,
-  WatchIcon,
 } from "lucide-react";
 
-// import bannerTwo from "../../assets/try-2.webp";
-// import bannerThree from "../../assets/try-3.webp";
 import { Button } from "../../components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useSwipeable } from 'react-swipeable';
 import {
   fetchAllFilteredProducts,
-  fetchProductDetails,
 } from "@/store/shop/products-slice";
-import ShoppingProductTitle from "@/components/shopping-view/product-title";
 import { useNavigate } from "react-router-dom";
 import { addToCart, fetchCartItems } from "@/store/shop/cart-slice";
 import { useToast } from "@/hooks/use-toast";
-import ProductDetailsDialog from "@/components/shopping-view/product-details";
 import { getFeatureImage, getFeatureImageMobile } from "@/store/shop/common-slice";
+// import FeaturedProducts from "@/components/shopping-view/FeaturedProducts";
+import NewArrivals from "@/components/shopping-view/NewArrivals";
+import RandomProducts from "@/components/shopping-view/RandomProducts";
+import AllProducts from "@/components/shopping-view/AllProducts";
 
-const categoryWithIcon = [
-  { id: "men", label: "Men", icon: ShirtIcon },
-  { id: "women", label: "Women", icon: CloudLightningIcon },
-  { id: "kids", label: "Kids", icon: BabyIcon },
-  { id: "accessories", label: "Accessories", icon: WatchIcon },
-  { id: "footwear", label: "Footwear", icon: UmbrellaIcon },
-];
-
-const brandsWithIcon = [
-  { id: "nike", label: "Nike", icon: Shirt },
-  { id: "adidas", label: "Adidas", icon: WashingMachine },
-  { id: "puma", label: "Puma", icon: ShoppingBasket },
-  { id: "levi", label: "Levi's", icon: Airplay },
-  { id: "zara", label: "Zara", icon: Images },
-  { id: "h&m", label: "H&M", icon: Heater },
-];
 
 function ShoppingHome() {
   const [currentSlide, setCurrentSlide] = useState(0);
-  const [openDetailsDialog, setOpenDetailsDialog] = useState(false);
-  const { productList, productDetails } = useSelector((state) => state.shopProducts);
+  const { productList } = useSelector((state) => state.shopProducts);
   const { user } = useSelector((state) => state.auth);
   const { featureImageList,featureImageListMobile } = useSelector((state) => state.commonFeature);
 
@@ -66,43 +34,61 @@ function ShoppingHome() {
 
   
 
+  // Swipe handlers - isolated to image area only
   const swipeHandlers = useSwipeable({
     onSwipedLeft: () =>
       setCurrentSlide((prev) => (prev + 1) % featureImageListMobile.length),
     onSwipedRight: () =>
       setCurrentSlide((prev) => (prev - 1 + featureImageListMobile.length) % featureImageListMobile.length),
-    preventDefaultTouchmoveEvent: true,
+    preventScrollOnSwipe: true,
+    trackMouse: false,
     trackTouch: true,
+    delta: 50, // Minimum swipe distance
   });
 
-  function handleNavigateToListingPage(getCurrentItem, section) {
-    sessionStorage.removeItem("filters");
-    const currentFilter = {
-      [section]: [getCurrentItem.id],
-    };
-    sessionStorage.setItem("filters", JSON.stringify(currentFilter));
-    navigate(`/shop/listing`);
-  }
 
-  function handleGetProductDetails(getCurrentProductId) {
-    dispatch(fetchProductDetails(getCurrentProductId));
-  }
+         function handleGetProductDetails(getCurrentProductId) {
+           if (getCurrentProductId) {
+             navigate(`/shop/product/${getCurrentProductId}`);
+           }
+         }
 
   function handleAddToCart(getCurrentProductId) {
+    if (!user) {
+      toast({
+        title: "يجب تسجيل الدخول أولاً",
+        description: "يرجى تسجيل الدخول لإضافة المنتج إلى السلة",
+        variant: "destructive"
+      });
+      return;
+    }
+
     dispatch(addToCart({ userId: user?.id, productId: getCurrentProductId, quantity: 1 }))
       .then((data) => {
         if (data?.payload?.success) {
           dispatch(fetchCartItems(user?.id));
-          toast({ title: "Product added to cart" });
+          toast({ 
+            title: "تمت إضافة المنتج إلى السلة",
+            description: "تم إضافة المنتج بنجاح"
+          });
+        } else {
+          toast({
+            title: "خطأ في الإضافة",
+            description: data?.payload?.message || "فشل إضافة المنتج إلى السلة",
+            variant: "destructive"
+          });
         }
+      })
+      .catch((error) => {
+        console.error("Error adding to cart:", error);
+        toast({
+          title: "خطأ في الإضافة",
+          description: "حدث خطأ أثناء إضافة المنتج إلى السلة",
+          variant: "destructive"
+        });
       });
   }
 
-  useEffect(() => {
-    if (productDetails) {
-      setOpenDetailsDialog(true);
-    }
-  }, [productDetails]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -124,196 +110,248 @@ function ShoppingHome() {
   }, [dispatch]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-black text-white">
-     <div className="relative w-full h-[600px] overflow-hidden">
-      {/* Mobile Swipeable Image */}
-      <div {...swipeHandlers} className="block sm:hidden w-full h-full">
-        <img
-          src={featureImageListMobile[currentSlide % featureImageListMobile.length]?.image}
-          alt="Mobile Banner"
-          className="w-full h-full object-cover rounded-lg shadow-xl shadow-white/10"
-        />
-      </div>
+    <div className="flex flex-col min-h-screen luxury-bg">
+      {/* Luxury Hero Section */}
+      <div className="relative w-full h-[60vh] sm:h-[70vh] md:h-[75vh] lg:h-[80vh] xl:h-[85vh] overflow-hidden">
+        {/* Animated Background Particles */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-luxury-gold/30 rounded-full animate-pulse" />
+          <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-luxury-gold/40 rounded-full animate-pulse delay-1000" />
+          <div className="absolute bottom-1/4 left-1/3 w-1.5 h-1.5 bg-luxury-gold/20 rounded-full animate-pulse delay-2000" />
+          <div className="absolute top-2/3 right-1/4 w-1 h-1 bg-luxury-gold/30 rounded-full animate-pulse delay-3000" />
+        </div>
 
-      {/* Desktop Images with Buttons */}
-      <div className="hidden sm:block w-full h-full relative">
-        {featureImageList.map((slide, index) => (
-          <img
-            src={slide.image}
-            key={index}
-            className={`absolute w-full top-0 left-0 h-full object-cover transition-opacity duration-1000 rounded-lg shadow-xl shadow-white/10 ${
-              index === currentSlide ? "opacity-100" : "opacity-0"
-            }`}
-          />
-        ))}
-
-        {/* Navigation Buttons */}
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() =>
-            setCurrentSlide(
-              (prev) => (prev - 1 + featureImageList.length) % featureImageList.length
-            )
-          }
-          className="absolute top-1/2 left-4 transform -translate-y-1/2 bg-white/80 hover:bg-white"
-        >
-          <ChevronLeftIcon className="w-4 h-4 text-black" />
-        </Button>
-
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() =>
-            setCurrentSlide((prev) => (prev + 1) % featureImageList.length)
-          }
-          className="absolute top-1/2 right-4 transform -translate-y-1/2 bg-white/80 hover:bg-white"
-        >
-          <ChevronRightIcon className="w-4 h-4 text-black" />
-        </Button>
-      </div>
-    </div>
-
-
-
-<section className="py-20 bg-gradient-to-br from-black via-gray-900 to-black relative overflow-hidden">
-  <div className="container mx-auto px-4">
-    {/* Glowing heading */}
-    <h2 className="text-4xl font-extrabold text-center mb-14 text-white tracking-wider relative z-10">
-      <span className="glow-text">Shop by Category</span>
-    </h2>
-
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-10 z-10 relative">
-      {categoryWithIcon.map((categoryItems) => (
-          <Card
-            key={categoryItems.id}
-            onClick={() => handleNavigateToListingPage(categoryItems, "category")}
-          className="cursor-pointer relative group bg-gradient-to-br  via-white/2 to-black border border-white/10 rounded-2xl overflow-hidden
-                     hover:scale-105 transition-transform duration-1000 shadow-[0_0_20px_rgba(255,255,255,0.1)]  lg:hover:bottom-2  "
-        >
-          {/* Shimmering overlay on hover */}
-          <div className="absolute inset-0 bg-gradient-to-tr from-black to-slate-950 opacity-0 group-hover:opacity-60 transition-all duration-700 blur-sm pointer-events-none" />
-
-          {/* Animated lines from corners */}
-          <div className="absolute -top-1 -left-1 w-full h-full z-0 pointer-events-none">
-            <div className="absolute top-0 left-0 w-0.5 h-full bg-gradient-to-b from-white-900 to-transparent animate-slideDown" />
-            <div className="absolute top-0 right-0 h-0.5 w-full bg-gradient-to-r from-white-900 to-transparent animate-slideRight" />
-            <div className="absolute bottom-0 right-0 w-0.8 h-full bg-gradient-to-t from-white-900 to-transparent animate-slideUp" />
-            <div className="absolute bottom-0 left-0 h-0.5 w-full bg-gradient-to-l from-white-900 to-transparent animate-slideLeft" />
-          </div>
-
-          <CardContent className="flex flex-col items-center justify-center p-6 text-white relative z-10">
-            <categoryItems.icon className="w-14 h-14 mb-4 text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)] transition-transform duration-300 group-hover:scale-110" />
-            <span className="font-semibold text-lg drop-shadow-sm">{categoryItems.label}</span>
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  </div>
-
-  {/* Glowing animated background lines */}
-  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 h-full w-[1px] bg-gradient-to-b from-white/20 to-transparent animate-glowLine" />
-</section>
-
-
-
-  <section className="py-20 bg-gradient-to-br from-gray-900 via-black to-gray-900 relative overflow-hidden">
-    <div className="container mx-auto px-4 relative z-10">
-      <h2 className="text-4xl md:text-5xl font-extrabold text-center mb-14 text-white tracking-wider glow-text">
-        Shop by Brand
-      </h2>
-
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-10">
-        {brandsWithIcon.map((brandItem) => (
-          <Card
-            key={brandItem.id}
-            onClick={() => handleNavigateToListingPage(brandItem, "brand")}
-            className="cursor-pointer relative group bg-gradient-to-br from-white via-white/5 to-black border border-white/10 rounded-2xl overflow-hidden 
-                      hover:scale-105 transition-transform duration-500 shadow-[0_0_20px_rgba(236,72,153,0.25)]
-                      hover:shadow-[0_0_30px_rgba(236,72,153,0.35)]"
-          >
-            {/* Neon overlay */}
-            <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition duration-500 pointer-events-none rounded-2xl blur-sm" />
-
-            {/* Corner animated lines (optional) */}
-            <div className="absolute inset-0 pointer-events-none">
-              <div className="absolute top-0 left-0 w-0.5 h-full bg-gradient-to-b from-black to-transparent animate-slideDown" />
-              <div className="absolute bottom-0 right-0 w-0.5 h-full bg-gradient-to-t from-black to-transparent animate-slideUp" />
-            </div>
-
-            <CardContent className="flex flex-col items-center justify-center p-6 text-white relative z-10">
-              <brandItem.icon className="w-14 h-14 mb-4 text-white  transition-transform duration-300 group-hover:scale-110" />
-              <span className="font-semibold text-lg drop-shadow-sm">{brandItem.label}</span>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    </div>
-
-    {/* Optional glowing line down the center */}
-    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 h-full w-[1px] bg-gradient-to-b from-pink-500/20 to-transparent animate-glowLine" />
-  </section>
-
-
-
-
-  <section className="relative py-20 bg-gradient-to-br from-black via-gray-900 to-black overflow-hidden">
-  {/* Animated Gradient Background Lines */}
-  <div className="absolute inset-0 overflow-hidden pointer-events-none">
-    <div className="absolute top-0 left-0 w-1 h-full bg-white/10 animate-slideDown rounded-full"></div>
-    <div className="absolute bottom-0 right-0 w-1 h-full bg-white/10 animate-slideUp rounded-full"></div>
-    <div className="absolute top-1/2 left-0 h-1 w-full bg-white/5 animate-slideRight"></div>
-    <div className="absolute top-1/3 right-0 h-1 w-full bg-white/5 animate-slideLeft"></div>
-  </div>
-
-  {/* Section Content */}
-  <div className="relative container mx-auto px-4 z-10">
-  <h2 className="text-4xl font-extrabold text-center text-white mb-12 tracking-wider uppercase glow-text relative before:absolute before:inset-0 before:blur-md before:bg-gradient-to-r before:from-pink-500 before:to-blue-500 before:opacity-40">
-    Featured Products
-  </h2>
-
-  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">
-    {productList?.length > 0 &&
-      productList.map((productItem) => (
-        <div
-          key={productItem._id}
-          className="relative overflow-hidden rounded-2xl border border-white/10 p-4 bg-white/5 backdrop-blur-lg group shadow-[0_0_30px_rgba(255,255,255,0.05)] hover:scale-105 transition-transform duration-300"
-        >
-          {/* Glowing border on hover */}
-          <div className="absolute inset-0 bg-gradient-to-br from-pink-500 via-purple-500 to-blue-500 opacity-0 group-hover:opacity-30 blur-lg transition-all duration-500 rounded-2xl pointer-events-none"></div>
-
-          {/* Inner glowing edge line */}
-          <div className="absolute inset-[1px] rounded-[inherit] bg-black/60 z-[1]"></div>
-
-          {/* Content layer */}
-          <div className="relative z-[2]">
-            <ShoppingProductTitle
-              handleGetProductDetails={handleGetProductDetails}
-              handleAddToCart={handleAddToCart}
-              product={productItem}
+        {/* Mobile Swipeable Image */}
+        <div className="block sm:hidden w-full h-full relative">
+          {/* Swipe area - only for image, isolated */}
+          <div {...swipeHandlers} className="absolute inset-0 w-full h-full z-0">
+            <img
+              src={featureImageListMobile[currentSlide % featureImageListMobile.length]?.image}
+              alt="Mobile Banner"
+              className="w-full h-full object-cover pointer-events-none select-none"
             />
+            {/* Luxury Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-luxury-navy via-luxury-navy/50 to-transparent pointer-events-none" />
+          </div>
+          
+          {/* Hero Content for Mobile - Above swipe area with proper z-index */}
+          <div className="absolute bottom-8 left-6 right-6 text-center z-50 pointer-events-auto">
+            <h1 className="text-gray-50  text-3xl font-serif font-bold dark:luxury-text  mb-4 pointer-events-none">
+              اكتشف الفخامة
+            </h1>
+            <p className="text-white/90 mb-6 text-sm leading-relaxed pointer-events-none">
+              استمتع بأرقى العطور المصنوعة للذواقة المميزين
+            </p>
+            <Button 
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate('/shop/listing');
+              }}
+              onTouchStart={(e) => e.stopPropagation()}
+              className="bg-luxury-gold text-luxury-navy hover:bg-luxury-gold-light luxury-btn px-8 py-3 font-semibold relative z-50"
+            >
+              استكشف المجموعة
+            </Button>
           </div>
         </div>
-      ))}
-  </div>
-</div>
 
-</section>
+        {/* Desktop Images with Buttons */}
+        <div className="hidden sm:block w-full h-full relative">
+          {/* Background Images Layer - No pointer events */}
+          <div className="absolute inset-0 w-full h-full pointer-events-none">
+            {featureImageList.map((slide, index) => (
+              <div
+                key={index}
+                className={`absolute w-full top-0 left-0 h-full transition-opacity duration-1000 ${
+                  index === currentSlide ? "opacity-100" : "opacity-0"
+                }`}
+              >
+                <img
+                  src={slide.image}
+                  className="w-full h-full object-cover pointer-events-none select-none"
+                  alt="Luxury Perfume"
+                />
+                {/* Luxury Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-r from-luxury-navy via-luxury-navy/30 to-transparent pointer-events-none" />
+              </div>
+            ))}
+          </div>
+
+          {/* Hero Content for Desktop - Above images with proper z-index */}
+          <div className="absolute inset-0 flex items-center z-20 pointer-events-auto">
+            <div className="container mx-auto px-4 sm:px-6 lg:px-8 ms-12">
+              <div className="max-w-2xl slide-in-left">
+                <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-sans font-extrabold bg-gradient-to-r from-gray-50 via-amber-300 to-yellow-950 bg-clip-text text-transparent mb-4 sm:mb-6 leading-tight dark:from-yellow-300 dark:via-amber-400 dark:to-yellow-500 pointer-events-none">
+                  الأناقة
+                </h1>
+
+                <h2 className="text-lg sm:text-xl md:text-2xl font-light text-white/90 mb-3 sm:mb-4 font-serif pointer-events-none">
+                  حيث تلتقي الفخامة بالعطور
+                </h2>
+                <p className="text-white/80 mb-6 sm:mb-8 text-base sm:text-lg leading-relaxed max-w-lg pointer-events-none">
+                  اكتشف مجموعتنا الحصرية من العطور الفاخرة، كل زجاجة تحفة فنية عطرية.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pointer-events-auto">
+                  <Button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate('/shop/listing');
+                    }}
+                    className="bg-luxury-gold text-luxury-navy hover:bg-luxury-gold-light luxury-btn px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold relative z-30"
+                  >
+                    تسوق الآن
+                  </Button>
+                  <Button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate('/shop/listing');
+                    }}
+                    variant="outline" 
+                    className="border-luxury-gold text-luxury-gold hover:bg-luxury-gold hover:text-luxury-navy luxury-btn px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg relative z-30"
+                  >
+                    عرض المجموعة
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation Buttons - Above everything */}
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              setCurrentSlide(
+                (prev) => (prev - 1 + featureImageList.length) % featureImageList.length
+              );
+            }}
+            className="absolute top-1/2 left-6 transform -translate-y-1/2 bg-luxury-navy/80 border-luxury-gold text-luxury-gold hover:bg-luxury-gold hover:text-luxury-navy luxury-btn z-30 pointer-events-auto"
+          >
+            <ChevronLeftIcon className="w-5 h-5" />
+          </Button>
+
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={(e) => {
+              e.stopPropagation();
+              setCurrentSlide((prev) => (prev + 1) % featureImageList.length);
+            }}
+            className="absolute top-1/2 right-6 transform -translate-y-1/2 bg-luxury-navy/80 border-luxury-gold text-luxury-gold hover:bg-luxury-gold hover:text-luxury-navy luxury-btn z-30 pointer-events-auto"
+          >
+            <ChevronRightIcon className="w-5 h-5" />
+          </Button>
+
+          {/* Slide Indicators - Above everything */}
+          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-2 z-30 pointer-events-auto">
+            {featureImageList.map((_, index) => (
+              <button
+                key={index}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCurrentSlide(index);
+                }}
+                className={`w-3 h-3 rounded-full transition-all duration-300 cursor-pointer ${
+                  index === currentSlide 
+                    ? 'bg-luxury-gold scale-125' 
+                    : 'bg-white/30 hover:bg-white/50'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+
+
+      {/* Random Products Section */}
+      <section className="container mx-auto px-6 mt-10">
+      
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-0 w-32 h-32 bg-luxury-gold/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 right-0 w-40 h-40 bg-luxury-gold/3 rounded-full blur-3xl" />
+        </div>
+
+        <div className="container mx-auto px-6 relative z-10">
+          <RandomProducts 
+            onViewDetails={handleGetProductDetails}
+            onAddToCart={handleAddToCart}
+          />
+        </div>
+      </section>
 
 
 
-      <ProductDetailsDialog
-        open={openDetailsDialog}
-        setOpen={setOpenDetailsDialog}
-        productDetails={productDetails}
-      />
+
+      {/* Featured Products Section */}
+       {/* <section className="container mx-auto px-6">
+        
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-0 w-32 h-32 bg-luxury-gold/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 right-0 w-40 h-40 bg-luxury-gold/3 rounded-full blur-3xl" />
+        </div>
+
+        <div className="container mx-auto px-6 relative z-10">
+          <FeaturedProducts 
+            onViewDetails={handleGetProductDetails}
+            onAddToCart={handleAddToCart}
+          />
+        </div>
+      </section> */}
+
+
+
+      {/* New Arrivals Section */}
+      <section className="relative py-24 bg-gradient-to-br from-luxury-navy-dark via-luxury-navy to-luxury-navy-light overflow-hidden">
+      
+
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-luxury-gold/3 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-1/3 right-1/4 w-48 h-48 bg-luxury-gold/2 rounded-full blur-3xl animate-pulse delay-1000" />
+        </div>
+
+        <div className="relative container mx-auto px-6 z-10">
+          <NewArrivals 
+            onViewDetails={handleGetProductDetails}
+            onAddToCart={handleAddToCart}
+          />
+        </div>
+      </section>
+
+{/* <section className="container mx-auto px-6 mt-10 mb-20 relative z-20">
+      
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-0 w-32 h-32 bg-luxury-gold/5 rounded-full blur-3xl" />
+          <div className="absolute bottom-1/4 right-0 w-40 h-40 bg-luxury-gold/3 rounded-full blur-3xl" />
+        </div>
+
+        <div className="container mx-auto px-6 relative z-10 pointer-events-auto">
+          <NewArrivals 
+            onViewDetails={handleGetProductDetails}
+            onAddToCart={handleAddToCart}
+          />
+        </div>
+      </section>
+
+    
+      <section className="relative py-24 bg-gradient-to-br from-luxury-navy-dark via-luxury-navy to-luxury-navy-light overflow-hidden z-20">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-luxury-gold/3 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-1/3 right-1/4 w-48 h-48 bg-luxury-gold/2 rounded-full blur-3xl animate-pulse delay-1000" />
+        </div>
+
+        <div className="relative container mx-auto px-6 z-10 pointer-events-auto">
+          <AllProducts 
+            onViewDetails={handleGetProductDetails}
+            onAddToCart={handleAddToCart}
+          />
+        </div>
+      </section> */}
+
     </div>
   );
 }
 
 export default ShoppingHome;
 
-// Add this to your global CSS or Tailwind config
-// .glow-text {
-//   text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
-// }
+

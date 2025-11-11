@@ -10,7 +10,8 @@ router.get('/check-auth', authMiddleware,(req,res)=>{
     const user=req.user
     res.status(200).json({
         success:true,
-        message:'Authenticated user!',user
+        message:'Authenticated user!',
+        user
     })
 })
 

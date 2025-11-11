@@ -1,0 +1,537 @@
+import ProductImageUpload from "@/components/admin-view/image-uploud";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import {
+  addFeatureImage,
+  deleteFeatureImages,
+  getFeatureImage,
+  getFeatureImageMobile,
+} from "@/store/shop/common-slice";
+import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { 
+  Trash2, 
+  Monitor, 
+  Smartphone, 
+  Sparkles, 
+  Upload, 
+  Image as ImageIcon,
+  Eye,
+  Edit,
+  Plus,
+  Download,
+  RefreshCw,
+  AlertCircle,
+  CheckCircle,
+  Clock
+} from "lucide-react";
+
+function AdminFeatures() {
+  const [imageFile, setImageFile] = useState(null);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState("");
+  const [imageLoadingStatus, setImageLoadingState] = useState(false);
+  const [activeTab, setActiveTab] = useState('desktop');
+  const [isUploading, setIsUploading] = useState(false);
+  const { toast } = useToast();
+  const { featureImageList, featureImageListMobile } = useSelector(
+    (state) => state.commonFeature
+  );
+  const dispatch = useDispatch();
+
+  const handleUploadFeatureImage = () => {
+    if (!uploadedImageUrl) {
+      toast({
+        title: "يرجى تحميل صورة أولاً",
+        description: "يجب اختيار صورة قبل الرفع"
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    dispatch(addFeatureImage({ image: uploadedImageUrl, device: "desktop" })).then((res) => {
+      setIsUploading(false);
+      if (res?.payload?.success) {
+        dispatch(getFeatureImage());
+        setImageFile(null);
+        setUploadedImageUrl("");
+        toast({
+          title: "تم رفع البانر بنجاح",
+          description: "تم إضافة البانر للكمبيوتر بنجاح"
+        });
+      } else {
+        toast({
+          title: "فشل في رفع البانر",
+          description: "حدث خطأ أثناء رفع الصورة"
+        });
+      }
+    });
+  };
+
+  const handleUploadFeatureImageMobile = () => {
+    if (!uploadedImageUrl) {
+      toast({
+        title: "يرجى تحميل صورة أولاً",
+        description: "يجب اختيار صورة قبل الرفع"
+      });
+      return;
+    }
+
+    setIsUploading(true);
+    dispatch(addFeatureImage({ image: uploadedImageUrl, device: "mobile" })).then((res) => {
+      setIsUploading(false);
+      if (res?.payload?.success) {
+        dispatch(getFeatureImageMobile());
+        setImageFile(null);
+        setUploadedImageUrl("");
+        toast({
+          title: "تم رفع البانر بنجاح",
+          description: "تم إضافة البانر للجوال بنجاح"
+        });
+      } else {
+        toast({
+          title: "فشل في رفع البانر",
+          description: "حدث خطأ أثناء رفع الصورة"
+        });
+      }
+    });
+  };
+
+  function handleDeleteFeature(getCurrentProductId) {
+    dispatch(deleteFeatureImages(getCurrentProductId)).then((data) => {
+      if (data?.payload?.success) {
+        dispatch(getFeatureImage());
+        dispatch(getFeatureImageMobile());
+        toast({ 
+          title: "تم حذف البانر بنجاح",
+          description: "تم حذف البانر من النظام"
+        });
+      }
+    });
+  }
+
+  const handleRefresh = () => {
+    dispatch(getFeatureImage());
+    dispatch(getFeatureImageMobile());
+    toast({
+      title: "تم تحديث البيانات",
+      description: "تم تحديث قائمة البنرات"
+    });
+  };
+
+  useEffect(() => {
+    dispatch(getFeatureImage());
+    dispatch(getFeatureImageMobile());
+  }, [dispatch]);
+
+  return (
+    <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6">
+      <div className="max-w-7xl mx-auto space-y-6 sm:space-y-8 md:space-y-12">
+        {/* Enhanced Header */}
+        <div className="text-center">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 mb-4 sm:mb-6 md:mb-8">
+            <div className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-primary/10 dark:bg-primary/20 backdrop-blur-sm border border-primary/30">
+              <ImageIcon className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-primary" />
+            </div>
+            <div>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-2">
+                إدارة البنرات
+              </h1>
+              <div className="w-24 sm:w-32 h-1 bg-gradient-to-r from-primary to-primary/70 mx-auto rounded-full" />
+            </div>
+          </div>
+          <p className="text-muted-foreground text-base sm:text-lg md:text-xl max-w-3xl mx-auto px-4 leading-relaxed">
+            إدارة شاملة لبنرات الموقع للكمبيوتر والجوال
+          </p>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+          <Card className="bg-card border border-border shadow-sm">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="p-2 sm:p-3 rounded-xl bg-primary/10 dark:bg-primary/20">
+                  <Monitor className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-xl sm:text-2xl font-bold text-foreground">{featureImageList?.length || 0}</h3>
+                  <p className="text-muted-foreground text-sm">بنرات الكمبيوتر</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card border border-border shadow-sm">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="p-2 sm:p-3 rounded-xl bg-primary/10 dark:bg-primary/20">
+                  <Smartphone className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+                </div>
+                <div>
+                  <h3 className="text-xl sm:text-2xl font-bold text-foreground">{featureImageListMobile?.length || 0}</h3>
+                  <p className="text-muted-foreground text-sm">بنرات الجوال</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-card border border-border shadow-sm">
+            <CardContent className="p-4 sm:p-6">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="p-2 sm:p-3 rounded-xl bg-primary/10 dark:bg-primary/20">
+                  <RefreshCw className="w-6 h-6 sm:w-8 sm:h-8 text-primary" />
+                </div>
+                <div>
+                  <Button
+                    onClick={handleRefresh}
+                    className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-sm sm:text-base"
+                  >
+                    تحديث البيانات
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="flex justify-center overflow-x-auto pb-2">
+          <div className="bg-muted/50 dark:bg-muted/30 backdrop-blur-sm rounded-xl sm:rounded-2xl p-1 sm:p-2 border border-border">
+            <div className="flex gap-1 sm:gap-2">
+              <Button
+                onClick={() => setActiveTab('desktop')}
+                variant={activeTab === 'desktop' ? 'default' : 'ghost'}
+                className={`px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl transition-all text-xs sm:text-sm whitespace-nowrap ${
+                  activeTab === 'desktop'
+                    ? 'bg-primary text-primary-foreground shadow-md'
+                    : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted'
+                }`}
+              >
+                <Monitor className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 flex-shrink-0" />
+                <span className="hidden sm:inline">بنرات الكمبيوتر</span>
+                <span className="sm:hidden">كمبيوتر</span>
+              </Button>
+              <Button
+                onClick={() => setActiveTab('mobile')}
+                variant={activeTab === 'mobile' ? 'default' : 'ghost'}
+                className={`px-4 sm:px-6 md:px-8 py-2 sm:py-3 rounded-lg sm:rounded-xl transition-all text-xs sm:text-sm whitespace-nowrap ${
+                  activeTab === 'mobile'
+                    ? 'bg-primary text-primary-foreground shadow-md'
+                    : 'bg-transparent text-muted-foreground hover:text-foreground hover:bg-muted'
+                }`}
+              >
+                <Smartphone className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2 flex-shrink-0" />
+                <span className="hidden sm:inline">بنرات الجوال</span>
+                <span className="sm:hidden">جوال</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Tab */}
+        {activeTab === 'desktop' && (
+          <div className="space-y-8">
+            {/* Upload Section */}
+            <Card className="bg-card border border-border shadow-sm">
+              <CardContent className="p-8">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="p-3 rounded-xl bg-luxury-gold/20">
+                    <Upload className="w-8 h-8 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-bold text-foreground">رفع بانر جديد للكمبيوتر</h2>
+                    <p className="text-primary/70">اختر صورة عالية الجودة للعرض على الشاشات الكبيرة</p>
+                  </div>
+                </div>
+
+                <div className="bg-muted/50 dark:bg-muted/30 rounded-2xl p-6 border border-border">
+                  <ProductImageUpload
+                    imageFile={imageFile}
+                    setImageFile={setImageFile}
+                    uploadedImageUrl={uploadedImageUrl}
+                    setUploadedImageUrl={setUploadedImageUrl}
+                    setImageLoadingState={setImageLoadingState}
+                    imageLoadingStatus={imageLoadingStatus}
+                    isCustomStyling={true}
+                  />
+
+                  {uploadedImageUrl && (
+                    <div className="mt-4 p-4 bg-muted/30 dark:bg-muted/20 rounded-lg border border-border">
+                      <p className="text-primary text-sm mb-2">معاينة الصورة:</p>
+                      <img 
+                        src={uploadedImageUrl} 
+                        alt="Preview" 
+                        className="w-full max-h-64 object-contain rounded-lg"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <Button
+                    onClick={handleUploadFeatureImage}
+                    disabled={isUploading || !uploadedImageUrl || imageLoadingStatus}
+                    className="w-full mt-6 bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-4 text-xl rounded-xl shadow-[0_0_20px_rgba(210,176,101,0.4)] transition-all duration-300 hover:scale-105 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none"
+                  >
+                    {isUploading ? (
+                      <>
+                        <RefreshCw className="w-6 h-6 mr-2 animate-spin" />
+                        جاري الرفع...
+                      </>
+                    ) : !uploadedImageUrl || imageLoadingStatus ? (
+                      <>
+                        <AlertCircle className="w-6 h-6 mr-2" />
+                        يرجى اختيار صورة أولاً
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-6 h-6 mr-2" />
+                        إضافة بانر الكمبيوتر +
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Desktop Banners Grid */}
+            <Card className="bg-card border border-border shadow-sm">
+              <CardContent className="p-8">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="p-3 rounded-xl bg-luxury-gold/20">
+                    <Monitor className="w-8 h-8 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-bold text-foreground">بنرات الكمبيوتر الحالية</h2>
+                    <p className="text-primary/70">إدارة البنرات المعروضة على الشاشات الكبيرة</p>
+                  </div>
+                </div>
+
+                {featureImageList?.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {featureImageList.map((featureImageItem, index) => (
+                      <div
+                        key={featureImageItem._id}
+                        className="group relative rounded-2xl overflow-hidden border border-border bg-muted/50 dark:bg-muted/30 hover:border-primary/30 transition-all duration-300 hover:shadow-[0_0_30px_rgba(210,176,101,0.3)]"
+                      >
+                        <div className="aspect-video overflow-hidden bg-muted/30 dark:bg-muted/20">
+                          <img
+                            src={featureImageItem.image?.startsWith('http') ? featureImageItem.image : `http://localhost:5000${featureImageItem.image || ''}`}
+                            alt="Desktop Banner"
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            onError={(e) => {
+                              e.target.src = '/placeholder-product.jpg';
+                            }}
+                          />
+                        </div>
+                        
+                        <div className="absolute inset-0 bg-gradient-to-t from-luxury-navy via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        
+                        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="bg-luxury-navy/90 border-luxury-gold text-primary hover:bg-luxury-gold hover:text-luxury-navy"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="bg-luxury-navy/90 border-luxury-gold text-primary hover:bg-luxury-gold hover:text-luxury-navy"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            onClick={() => handleDeleteFeature(featureImageItem._id)}
+                            className="bg-red-500/90 border-red-500 text-foreground hover:bg-red-600"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+
+                        <div className="p-4">
+                          <div className="flex items-center justify-between">
+                            <Badge className="bg-luxury-gold/20 text-primary border-luxury-gold/30">
+                              بانر #{index + 1}
+                            </Badge>
+                            <div className="flex items-center gap-1 text-primary/70 text-sm">
+                              <CheckCircle className="w-4 h-4" />
+                              نشط
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Monitor className="w-16 h-16 text-primary/30 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-foreground mb-2">لا توجد بنرات للكمبيوتر</h3>
+                    <p className="text-primary/70">ابدأ برفع أول بانر للكمبيوتر</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Mobile Tab */}
+        {activeTab === 'mobile' && (
+          <div className="space-y-8">
+            {/* Upload Section */}
+            <Card className="bg-card border border-border shadow-sm">
+              <CardContent className="p-8">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="p-3 rounded-xl bg-luxury-gold/20">
+                    <Upload className="w-8 h-8 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-bold text-foreground">رفع بانر جديد للجوال</h2>
+                    <p className="text-primary/70">اختر صورة محسنة للعرض على الشاشات الصغيرة</p>
+                  </div>
+                </div>
+
+                <div className="bg-muted/50 dark:bg-muted/30 rounded-2xl p-6 border border-border">
+                  <ProductImageUpload
+                    imageFile={imageFile}
+                    setImageFile={setImageFile}
+                    uploadedImageUrl={uploadedImageUrl}
+                    setUploadedImageUrl={setUploadedImageUrl}
+                    setImageLoadingState={setImageLoadingState}
+                    imageLoadingStatus={imageLoadingStatus}
+                    isCustomStyling={true}
+                  />
+
+                  {uploadedImageUrl && (
+                    <div className="mt-4 p-4 bg-muted/30 dark:bg-muted/20 rounded-lg border border-border">
+                      <p className="text-primary text-sm mb-2">معاينة الصورة:</p>
+                      <img 
+                        src={uploadedImageUrl} 
+                        alt="Preview" 
+                        className="w-full max-h-64 object-contain rounded-lg"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <Button
+                    onClick={handleUploadFeatureImageMobile}
+                    disabled={isUploading || !uploadedImageUrl || imageLoadingStatus}
+                    className="w-full mt-6 bg-primary hover:bg-primary/90 text-primary-foreground font-bold py-4 text-xl rounded-xl shadow-[0_0_20px_rgba(210,176,101,0.4)] transition-all duration-300 hover:scale-105 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:shadow-none"
+                  >
+                    {isUploading ? (
+                      <>
+                        <RefreshCw className="w-6 h-6 mr-2 animate-spin" />
+                        جاري الرفع...
+                      </>
+                    ) : !uploadedImageUrl || imageLoadingStatus ? (
+                      <>
+                        <AlertCircle className="w-6 h-6 mr-2" />
+                        يرجى اختيار صورة أولاً
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-6 h-6 mr-2" />
+                        إضافة بانر الجوال +
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Mobile Banners Grid */}
+            <Card className="bg-card border border-border shadow-sm">
+              <CardContent className="p-8">
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="p-3 rounded-xl bg-luxury-gold/20">
+                    <Smartphone className="w-8 h-8 text-primary" />
+                  </div>
+                  <div>
+                    <h2 className="text-3xl font-bold text-foreground">بنرات الجوال الحالية</h2>
+                    <p className="text-primary/70">إدارة البنرات المعروضة على الهواتف المحمولة</p>
+                  </div>
+                </div>
+
+                {featureImageListMobile?.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {featureImageListMobile.map((featureImageItem, index) => (
+                      <div
+                        key={featureImageItem._id}
+                        className="group relative rounded-2xl overflow-hidden border border-border bg-muted/50 dark:bg-muted/30 hover:border-primary/30 transition-all duration-300 hover:shadow-[0_0_30px_rgba(210,176,101,0.3)]"
+                      >
+                        <div className="aspect-[9/16] overflow-hidden bg-muted/30 dark:bg-muted/20">
+                          <img
+                            src={featureImageItem.image?.startsWith('http') ? featureImageItem.image : `http://localhost:5000${featureImageItem.image || ''}`}
+                            alt="Mobile Banner"
+                            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                            onError={(e) => {
+                              e.target.src = '/placeholder-product.jpg';
+                            }}
+                          />
+                        </div>
+                        
+                        <div className="absolute inset-0 bg-gradient-to-t from-luxury-navy via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        
+                        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300">
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="bg-luxury-navy/90 border-luxury-gold text-primary hover:bg-luxury-gold hover:text-luxury-navy"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="bg-luxury-navy/90 border-luxury-gold text-primary hover:bg-luxury-gold hover:text-luxury-navy"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            onClick={() => handleDeleteFeature(featureImageItem._id)}
+                            className="bg-red-500/90 border-red-500 text-foreground hover:bg-red-600"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+
+                        <div className="p-4">
+                          <div className="flex items-center justify-between">
+                            <Badge className="bg-luxury-gold/20 text-primary border-luxury-gold/30">
+                              بانر #{index + 1}
+                            </Badge>
+                            <div className="flex items-center gap-1 text-primary/70 text-sm">
+                              <CheckCircle className="w-4 h-4" />
+                              نشط
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Smartphone className="w-16 h-16 text-primary/30 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-foreground mb-2">لا توجد بنرات للجوال</h3>
+                    <p className="text-primary/70">ابدأ برفع أول بانر للجوال</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export default AdminFeatures;
+

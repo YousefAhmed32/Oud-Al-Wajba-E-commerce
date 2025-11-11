@@ -2,22 +2,22 @@
   export const registerFormControls = [
     {
       name: "userName",
-      label: "User Name",
-      placeholder: "Enter your user name",
+      label: "اسم المستخدم",
+      placeholder: "أدخل اسم المستخدم",
       componentType: "input",
       type: "text",
     },
     {
       name: "email",
-      label: "Email",
-      placeholder: "Enter your email",
+      label: "البريد الإلكتروني",
+      placeholder: "أدخل بريدك الإلكتروني",
       componentType: "input",
       type: "email",
     },
     {
       name: "password",
-      label: "Password",
-      placeholder: "Enter your password",
+      label: "كلمة المرور",
+      placeholder: "أدخل كلمة المرور",
       componentType: "input",
       type: "password",
     },
@@ -41,105 +41,142 @@
 
   export const addProductFormElements = [
     {
-      label:"Title",
+      label:"اسم المنتج",
       name: "title",
       componentType: "input",
       type: "text",
-      placeholder: "Enter product title",
+      placeholder: "أدخل اسم المنتج",
+      required: true,
     },
     {
-      label: "Description",
+      label: "وصف المنتج",
       name: "description",
       componentType: "textarea",
-      placeholder: "Enter product description",
+      placeholder: "أدخل وصف مفصل للمنتج",
+      required: true,
     },
     {
-      label:"Category",
+      label:"الفئة",
       name:"category",
-      componentType: "select",
+      componentType: "dynamic-select",
+      required: true,
       options: [
-        { id: "men", label: "Men" },
-        { id: "women", label: "Women" },
-        { id: "kids", label: "Kids" },
-        { id: "accessories", label: "Accessories" },
-        { id: "footwear", label: "Footwear" },
+        { id: "men", label: "رجالي" },
+        { id: "women", label: "نسائي" },
+        { id: "kids", label: "أطفال" },
+        { id: "accessories", label: "إكسسوارات" },
+        { id: "footwear", label: "أحذية" },
+        { id: "perfumes", label: "عطور" },
+        { id: "cosmetics", label: "مستحضرات تجميل" },
+        { id: "skincare", label: "العناية بالبشرة" },
       ]
     },
     {
-      label: "Brand",
+      label: "العلامة التجارية",
       name: "brand",
-      componentType: "select",
-      options: [
-        { id: "nike", label: "Nike" },
-        { id: "adidas", label: "Adidas" },
-        { id: "puma", label: "Puma" },
-        { id: "levi", label: "Levi's" },
-        { id: "zara", label: "Zara" },
-        { id: "h&m", label: "H&M" },
-      ],
+      componentType: "brand-select",
+      required: true,
     },
     {
-      label: "Price",
+      label: "السعر الأساسي",
       name: "price",
       componentType: "input",
       type: "number",
-      placeholder: "Enter product price",
+      placeholder: "أدخل السعر الأساسي",
+      required: true,
+      min: 0,
     },
-  {
-      label: "Sale Price",
+    {
+      label: "سعر التخفيض (اختياري)",
       name: "salePrice",
       componentType: "input",
       type: "number",
-      placeholder: "Enter sale price (optional)",
+      placeholder: "أدخل سعر التخفيض",
+      min: 0,
     },
     {
-      label: "Total Stock",
+      label: "الكمية المتاحة",
       name: "totalStock",
       componentType: "input",
       type: "number",
-      placeholder: "Enter total stock",
+      placeholder: "أدخل الكمية المتاحة",
+      required: true,
+      min: 0,
+    },
+    {
+      label: "حجم المنتج (مل)",
+      name: "size",
+      componentType: "input",
+      type: "text",
+      placeholder: "مثال: 100ml, 50ml",
+    },
+    {
+      label: "نوع الرائحة",
+      name: "fragranceType",
+      componentType: "select",
+      options: [
+        { id: "woody", label: "خشبي" },
+        { id: "floral", label: "زهري" },
+        { id: "citrus", label: "حمضي" },
+        { id: "oriental", label: "شرقي" },
+        { id: "fresh", label: "منعش" },
+        { id: "spicy", label: "حار" },
+        { id: "aquatic", label: "مائي" },
+        { id: "gourmand", label: "حلو" },
+      ],
+    },
+    {
+      label: "الجنس المستهدف",
+      name: "gender",
+      componentType: "select",
+      required: true,
+      options: [
+        { id: "men", label: "رجالي" },
+        { id: "women", label: "نسائي" },
+        { id: "unisex", label: "للجنسين" },
+      ],
     },
   ]
 
   export const shoppingViewHeaderMenuItem = [
     {
       id : 'home',
-      label:'Home',
+      label:'الرئيسية',
       path : '/shop/home'
     },
        {
       id : 'products',
-      label:'Products',
+      label:'المنتجات',
       path : '/shop/listing'
     },
-     {
-      id : 'men',
-      label:'Men',
-      path : '/shop/listing'
-    },
-    {
-      id : 'women',
-      label:'Women',
-      path : '/shop/listing'
-    },
-    {
-      id : 'kids',
-      label:'Kids',
-      path : '/shop/listing'
-    },
-    {
-      id : 'footwear',
-      label:'Footwear',
-      path : '/shop/listing'
-    },
-    {
-      id : 'accessories',
-      label:'Accessories',
-      path : '/shop/listing'
-    },
+    //  {
+    //   id : 'men',
+    //   label:'رجالي',
+    //   path : '/shop/listing'
+    // },
+    // {
+    //   id : 'women',
+    //   label:'نسائي',
+    //   path : '/shop/listing'
+    // },
+    // {
+    //   id : 'kids',
+    //   label:'أطفال',
+    //   path : '/shop/listing'
+    // },
+    // {
+    //   id : 'footwear',
+    //   label:'أحذية',
+    //   path : '/shop/listing'
+    // },
+    // {
+    //   id : 'accessories',
+    //   label:'إكسسوارات',
+    //   path : '/shop/listing'
+    // },
     {
       id : 'search',
-      label:'Search',
+      label:'بحث',
       path : '/shop/search'
     },
   ]
@@ -230,44 +267,48 @@ export const addressFormControls = [
 
 export const addCouponFormElements = [
   {
-    label: "Coupon Code",
+    label: "كود الكوبون",
     name: "code",
     componentType: "input",
     type: "text",
-    placeholder: "Enter coupon code",
-       
-
+    placeholder: "أدخل كود الكوبون",
+    required: true,
   },
   {
-  label: "Discount Type",
-  name: "discountType",
-  componentType: "select",
-  options: [
-    { id: "Fixed", label: "Fixed" },
-    { id: "percentage", label: "Percentage" },
-  ],
-  placeholder: "Select discount type",
-},
-{
-  label: "Discount Value",
-  name: "discountValue", 
-  componentType: "input",
-  type: "number",
-  placeholder: "Enter discount value",
-},
-
+    label: "نوع الخصم",
+    name: "discountType",
+    componentType: "select",
+    required: true,
+    options: [
+      { id: "fixed", label: "مبلغ ثابت" },
+      { id: "percentage", label: "نسبة مئوية" },
+    ],
+    placeholder: "اختر نوع الخصم",
+  },
   {
-    label: "Expiry Date",
+    label: "قيمة الخصم",
+    name: "discountValue", 
+    componentType: "input",
+    type: "number",
+    placeholder: "أدخل قيمة الخصم",
+    required: true,
+    min: 0,
+  },
+  {
+    label: "تاريخ الانتهاء",
     name: "expiryDate",
     componentType: "input",
     type: "date",
+    required: true,
+    placeholder: "اختر تاريخ الانتهاء",
   },
   {
-    label: "Usage Limit (optional)",
+    label: "حد الاستخدام (اختياري)",
     name: "usageLimit",
     componentType: "input",
     type: "number",
-    placeholder: "How many times can it be used?",
+    placeholder: "كم مرة يمكن استخدامه؟",
+    min: 1,
   }
 ];
 

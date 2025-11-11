@@ -11,9 +11,46 @@ export default {
         'lg': 'var(--radius)',
         'md': 'calc(var(--radius) - 2px)',
         'sm': 'calc(var(--radius) - 4px)',
-        '50px': '50px', // ✅ Custom class: rounded-50px
+        '50px': '50px', //  Custom class: rounded-50px
       },
       colors: {
+        // Custom Perfume Store Colors
+        navy: {
+          50: '#f0f2ff',
+          100: '#e0e7ff',
+          200: '#c7d2fe',
+          300: '#a5b4fc',
+          400: '#818cf8',
+          500: '#6366f1',
+          600: '#4f46e5',
+          700: '#4338ca',
+          800: '#3730a3',
+          900: '#312e81',
+          950: '#000012', // Navy Blue - Main background
+        },
+        gold: {
+          50: '#fffbeb',
+          100: '#fef3c7',
+          200: '#fde68a',
+          300: '#fcd34d',
+          400: '#fbbf24',
+          500: '#f59e0b',
+          600: '#d97706',
+          700: '#b45309',
+          800: '#92400e',
+          900: '#78350f',
+          950: '#D2B065', // Luxury Gold - Accent color
+        },
+        // Luxury theme colors
+        'luxury-gold': {
+          DEFAULT: '#D2B065',
+          'light': '#E6C884',
+          'dark': '#B8965A',
+        },
+        'luxury-navy': {
+          DEFAULT: '#000012',
+          'light': '#1a1a2e',
+        },
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
         card: {

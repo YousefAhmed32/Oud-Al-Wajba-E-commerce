@@ -1,7 +1,7 @@
 import { Label } from "@radix-ui/react-label";
 import { useEffect, useRef } from "react";
 import { Input } from "../ui/input";
-import { UploadCloudIcon, FileIcon, XIcon, ImagePlus } from "lucide-react"; // ✅ استيراد FileIcon
+import { UploadCloudIcon, FileIcon, XIcon, ImagePlus, CheckCircle2 } from "lucide-react"; // ✅ استيراد FileIcon
 import { Button } from "../ui/button";
 import axios from "axios";
 import { Skeleton } from "../ui/skeleton";
@@ -34,6 +34,7 @@ function ProductImageUpload({
   }
   function handleRemoveImage() {
     setImageFile(null);
+    setUploadedImageUrl(""); // Clear uploaded URL when removing image
     if (inputRef.current) {
       inputRef.current.value = "";
     }
@@ -41,26 +42,54 @@ function ProductImageUpload({
 
   console.log("Image File:", imageFile);
 
-  async function uploadImageToCloudinary() {
+  // Upload image to local server (replaces Cloudinary)
+  async function uploadImageToServer() {
+    if (!imageFile) return;
+    
     setImageLoadingState(true);
     const data = new FormData();
-    data.append("my_file", imageFile);
-    const response = await axios.post(
-      "http://localhost:5000/api/admin/products/image-upload",
-      data
-    );
-    console.log(response, "response");
-    if (response?.data?.success) {
-      setUploadedImageUrl(response.data.result.url);
-      setImageLoadingState(false);
-      console.log("Uploaded URL:", uploadedImageUrl);
-    }
+    data.append("image", imageFile); // Changed from "my_file" to "image" to match server expectation
     
-
+    try {
+      const response = await axios.post(
+        "http://localhost:5000/api/admin/products/image-upload",
+        data,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      
+      console.log(response, "response");
+      if (response?.data?.success) {
+        // Use full URL with server origin for preview
+        const fullUrl = `http://localhost:5000${response.data.result.url}`;
+        setUploadedImageUrl(fullUrl);
+        console.log("Uploaded URL:", fullUrl);
+      } else {
+        console.error("Upload failed:", response?.data?.message);
+        setUploadedImageUrl(""); // Clear URL on failure
+      }
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      setUploadedImageUrl(""); // Clear URL on error
+      
+      // Log more details for debugging
+      if (error.response) {
+        console.error("Server error:", error.response.status, error.response.data);
+      } else if (error.request) {
+        console.error("No response from server:", error.request);
+      }
+    } finally {
+      setImageLoadingState(false);
+    }
   }
 
   useEffect(() => {
-    if (imageFile !== null) uploadImageToCloudinary();
+    if (imageFile !== null && !isEditMode) {
+      uploadImageToServer();
+    }
   }, [imageFile]);
 
   return (
@@ -72,16 +101,6 @@ function ProductImageUpload({
         className="border-2 border-dashed rounded-lg p-4 cursor-pointer"
       >
  
-        {uploadedImageUrl && (
-          <div className="mt-4">
-            <img
-              src={uploadedImageUrl}
-              alt="Uploaded preview"
-              className="w-full max-h-64 object-cover rounded-md"
-            />
-          </div>
-        )}
-   
         <Input
           id="image-upload"
           type="file"
@@ -99,13 +118,24 @@ function ProductImageUpload({
             <span>Drag & drop or click to upload image</span>
           </Label>
         ) : imageLoadingStatus ? (
-          <Skeleton className="h-10 bg-gray-100" />
+          <div className="flex items-center justify-center py-4">
+            <Skeleton className="h-10 w-full bg-gray-100" />
+            <span className="ml-2 text-sm text-muted-foreground">جاري الرفع...</span>
+          </div>
         ) : (
           <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <FileIcon className="w-8 h-8 text-primary mr-2" />
+            <div className="flex items-center gap-2">
+              <FileIcon className="w-8 h-8 text-primary" />
+              <div>
+                <p className="text-sm font-medium">{imageFile.name}</p>
+                {uploadedImageUrl && (
+                  <div className="flex items-center gap-1 text-xs text-green-500">
+                    <CheckCircle2 className="w-3 h-3" />
+                    <span>تم الرفع بنجاح</span>
+                  </div>
+                )}
+              </div>
             </div>
-            <p className="text-sm font-medium">{imageFile.name}</p>
             <Button
               variant="ghost"
               size="icon"

@@ -9,12 +9,42 @@ const initialState = {
 export const addNewProduct = createAsyncThunk(
   'products/addNewProduct',
   async (formData) => {
+    // Create FormData object for multipart/form-data
+    const data = new FormData();
+    
+    // Append product fields
+    if (formData.title) data.append('title', formData.title);
+    if (formData.description) data.append('description', formData.description);
+    if (formData.price) data.append('price', formData.price);
+    if (formData.category) data.append('category', formData.category);
+    if (formData.brand) data.append('brand', formData.brand);
+    if (formData.salePrice) data.append('salePrice', formData.salePrice);
+    if (formData.totalStock) data.append('totalStock', formData.totalStock);
+    if (formData.size) data.append('size', formData.size);
+    if (formData.fragranceType) data.append('fragranceType', formData.fragranceType);
+    if (formData.gender) data.append('gender', formData.gender);
+    
+    // Handle image files
+    // If formData has image files (from File objects), append them
+    if (formData.imageFiles && Array.isArray(formData.imageFiles)) {
+      formData.imageFiles.forEach((file) => {
+        if (file instanceof File) {
+          data.append('images', file);
+        }
+      });
+    }
+    
+    // If formData has a single image file
+    if (formData.imageFile && formData.imageFile instanceof File) {
+      data.append('images', formData.imageFile);
+    }
+    
     const result = await axios.post(
       'http://localhost:5000/api/admin/products/add',
-      formData,
+      data,
       {
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "multipart/form-data",
         },
       }
     );
@@ -25,12 +55,41 @@ export const addNewProduct = createAsyncThunk(
 export const editProduct = createAsyncThunk(
   'products/editProduct',
   async ({ id, formData }) => {
+    // Create FormData object for multipart/form-data
+    const data = new FormData();
+    
+    // Append product fields
+    if (formData.title !== undefined) data.append('title', formData.title);
+    if (formData.description !== undefined) data.append('description', formData.description);
+    if (formData.price !== undefined) data.append('price', formData.price);
+    if (formData.category !== undefined) data.append('category', formData.category);
+    if (formData.brand !== undefined) data.append('brand', formData.brand);
+    if (formData.salePrice !== undefined) data.append('salePrice', formData.salePrice);
+    if (formData.totalStock !== undefined) data.append('totalStock', formData.totalStock);
+    if (formData.size !== undefined) data.append('size', formData.size);
+    if (formData.fragranceType !== undefined) data.append('fragranceType', formData.fragranceType);
+    if (formData.gender !== undefined) data.append('gender', formData.gender);
+    if (formData.keepOldImages !== undefined) data.append('keepOldImages', formData.keepOldImages);
+    
+    // Handle image files if provided
+    if (formData.imageFiles && Array.isArray(formData.imageFiles)) {
+      formData.imageFiles.forEach((file) => {
+        if (file instanceof File) {
+          data.append('images', file);
+        }
+      });
+    }
+    
+    if (formData.imageFile && formData.imageFile instanceof File) {
+      data.append('images', formData.imageFile);
+    }
+    
     const result = await axios.put(
       `http://localhost:5000/api/admin/products/edit/${id}`,
-      formData,
+      data,
       {
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "multipart/form-data",
         },
       }
     );
@@ -40,14 +99,12 @@ export const editProduct = createAsyncThunk(
 
 export const deleteProduct = createAsyncThunk(
   'products/deleteProduct',
-  async ({ id }) => {
+  async (productId) => {
+    // Handle both object format { id } and direct ID
+    const id = typeof productId === 'object' ? productId.id : productId;
+    
     const result = await axios.delete(
-      `http://localhost:5000/api/admin/products/delete/${id}`,
-      {
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
+      `http://localhost:5000/api/admin/products/delete/${id}`
     );
     return result?.data;
   }

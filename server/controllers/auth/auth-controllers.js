@@ -56,6 +56,10 @@ const loginUser = async (req, res) => {
       });
     }
 
+    // Update last login
+    existingUser.lastLogin = new Date();
+    await existingUser.save();
+
     const token = jwt.sign(
       {
         id: existingUser._id,
@@ -64,7 +68,7 @@ const loginUser = async (req, res) => {
         userName: existingUser.userName,
       },
       process.env.JWT_SECRET || 'CLIENT__SECRET__KEY',
-      { expiresIn: '120m' }
+      { expiresIn: '7d' }
     );
 
     res

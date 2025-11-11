@@ -19,7 +19,19 @@ const UserSchema = new mongoose.Schema({
   role: {
     type: String,
     default: 'user'
-
+  },
+  status: {
+    type: String,
+    enum: ['active', 'inactive'],
+    default: 'active'
+  },
+  phone: {
+    type: String,
+    default: ''
+  },
+  lastLogin: {
+    type: Date,
+    default: null
   }
 
 },

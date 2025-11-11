@@ -12,7 +12,11 @@ const addFeatureImage = async (req, res) => {
     const newFeature = new Feature({ image, device });
     await newFeature.save();
 
-    res.status(201).json({ message: 'Feature added successfully', data: newFeature });
+    res.status(201).json({ 
+      success: true,
+      message: 'Feature added successfully', 
+      data: newFeature 
+    });
   } catch (error) {
     console.error('Error adding feature:', error);
     res.status(500).json({ message: 'Internal server error' });

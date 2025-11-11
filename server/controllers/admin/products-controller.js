@@ -1,43 +1,59 @@
-const { ImageUploadUtil } = require("../../helper/cloudinary");
 const Product = require("../../models/Product");
+const { deleteUploadedFiles } = require("../../middleware/upload");
 
+/**
+ * Handle single image upload (for backward compatibility)
+ * Returns the file information in the same format as before
+ */
 const handleImageUpload = async (req, res) => {
     try {
-        const b64 = Buffer.from(req.file.buffer).toString('base64');
-        const url = `data:${req.file.mimetype};base64,${b64}`;
-        const result = await ImageUploadUtil(url);
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: "No file uploaded"
+            });
+        }
+
+        // Construct the URL for accessing the file
+        const fileUrl = `/uploads/products/${req.file.filename}`;
 
         res.json({
             success: true,
-            result
+            result: {
+                url: fileUrl,
+                filename: req.file.filename,
+                path: req.file.path,
+                mimetype: req.file.mimetype,
+                size: req.file.size
+            }
         });
     } catch (e) {
         console.error(e);
-        res.json({
+        res.status(500).json({
             success: false,
-
-            message: "Image upload failed"
+            message: "Image upload failed",
+            error: e.message
         });
     }
-
 };
 
 //* --------- Add New product --------------- */
+/**
+ * Add a new product with image upload support
+ * Accepts multipart/form-data with:
+ * - images: array of image files (up to 6)
+ * - Product fields: title, description, price, category, brand, etc.
+ */
 const addProduct = async (req, res) => {
+  const uploadedFiles = [];
+  
   try {
-    const {
-      image,
-      title,
-      description,
-      price,
-      category,
-      brand,
-      salePrice,
-      totalStock
-    } = req.body;
+    // Get uploaded files if any
+    const files = req.files || [];
+    uploadedFiles.push(...files);
 
-    const newlyCreatedProduct = new Product({
-      image,
+    // Parse form data fields
+    const {
       title,
       description,
       price,
@@ -45,6 +61,48 @@ const addProduct = async (req, res) => {
       brand,
       salePrice,
       totalStock,
+      size,
+      fragranceType,
+      gender
+    } = req.body;
+
+    // Validate required fields
+    if (!title || !description || !price || !category || !brand || !totalStock || !gender) {
+      // Clean up uploaded files if validation fails
+      deleteUploadedFiles(uploadedFiles);
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields: title, description, price, category, brand, totalStock, and gender are required"
+      });
+    }
+
+    // Process uploaded images
+    const imageObjects = files.map(file => ({
+      filename: file.filename,
+      path: file.path,
+      url: `/uploads/products/${file.filename}`,
+      mimetype: file.mimetype,
+      size: file.size
+    }));
+
+    // Set main image (first image in array, or empty string)
+    const mainImage = imageObjects.length > 0 ? imageObjects[0].url : '';
+
+    // Create new product
+    const newlyCreatedProduct = new Product({
+      image: mainImage,
+      images: imageObjects,
+      title,
+      description,
+      price: parseFloat(price),
+      category,
+      brand,
+      salePrice: salePrice ? parseFloat(salePrice) : undefined,
+      totalStock: parseInt(totalStock),
+      size: size || undefined,
+      fragranceType: fragranceType || undefined,
+      gender,
+      isActive: true
     });
 
     await newlyCreatedProduct.save();
@@ -55,16 +113,22 @@ const addProduct = async (req, res) => {
       data: newlyCreatedProduct,
     });
   } catch (e) {
+    console.error('Error adding product:', e);
+    
+    // Clean up uploaded files if product creation fails
+    deleteUploadedFiles(uploadedFiles);
+    
     res.status(500).json({
       success: false,
       message: "Add new product failed",
+      error: e.message
     });
   }
 };
 //* --------- fetch  products --------------- */
 const fetchAllProduct = async (req, res) => {
     try {
-        const listOfProducts = await Product.find({})
+        const listOfProducts = await Product.find({}).populate('brand', 'name nameEn')
         res.status(200).json({
             success: true,
             message: "Products fetched successfully",
@@ -80,36 +144,84 @@ const fetchAllProduct = async (req, res) => {
 }
 
 //* --------- edit any product --------------- */
+/**
+ * Edit an existing product
+ * Supports updating product fields and optionally replacing images
+ * If new images are uploaded, they replace the old ones
+ */
 const editProduct = async (req, res) => {
+  const uploadedFiles = [];
+  let oldImages = [];
+  
   try {
     const { id } = req.params;
+    const files = req.files || [];
+    uploadedFiles.push(...files);
+
     const {
-      image,
       title,
       description,
       price,
       category,
       brand,
       salePrice,
-      totalStock
+      totalStock,
+      size,
+      fragranceType,
+      gender,
+      keepOldImages // Optional: if true, keep old images when new ones are uploaded
     } = req.body;
 
     const findProduct = await Product.findById(id);
     if (!findProduct) {
+      deleteUploadedFiles(uploadedFiles);
       return res.status(404).json({
         success: false,
         message: "Product not found",
       });
     }
 
-    findProduct.title = title || findProduct.title;
-    findProduct.image = image || findProduct.image;
-    findProduct.description = description || findProduct.description;
-    findProduct.category = category || findProduct.category;
-    findProduct.brand = brand || findProduct.brand;
-    findProduct.price = price === '' ? 0 : price || findProduct.price;
-    findProduct.salePrice = salePrice ==='' ? 0  : salePrice || findProduct.salePrice;
-    findProduct.totalStock = totalStock || findProduct.totalStock;
+    // Store old images for potential cleanup
+    oldImages = [...(findProduct.images || [])];
+
+    // Update product fields
+    if (title !== undefined) findProduct.title = title;
+    if (description !== undefined) findProduct.description = description;
+    if (category !== undefined) findProduct.category = category;
+    if (brand !== undefined) findProduct.brand = brand;
+    if (price !== undefined) findProduct.price = price === '' ? 0 : parseFloat(price);
+    if (salePrice !== undefined) findProduct.salePrice = salePrice === '' ? 0 : parseFloat(salePrice);
+    if (totalStock !== undefined) findProduct.totalStock = parseInt(totalStock);
+    if (size !== undefined) findProduct.size = size;
+    if (fragranceType !== undefined) findProduct.fragranceType = fragranceType;
+    if (gender !== undefined) findProduct.gender = gender;
+
+    // Handle image updates
+    if (files.length > 0) {
+      // Process new uploaded images
+      const newImageObjects = files.map(file => ({
+        filename: file.filename,
+        path: file.path,
+        url: `/uploads/products/${file.filename}`,
+        mimetype: file.mimetype,
+        size: file.size
+      }));
+
+      // If keepOldImages is true, combine old and new images
+      if (keepOldImages === 'true' || keepOldImages === true) {
+        findProduct.images = [...oldImages, ...newImageObjects];
+      } else {
+        findProduct.images = newImageObjects;
+      }
+
+      // Update main image to first image
+      if (findProduct.images.length > 0) {
+        findProduct.image = findProduct.images[0].url;
+      }
+
+      // Note: In production, you might want to delete old image files here
+      // For now, we keep them to avoid breaking existing references
+    }
 
     await findProduct.save();
 
@@ -119,18 +231,28 @@ const editProduct = async (req, res) => {
       data: findProduct,
     });
   } catch (e) {
-    console.log(e);
+    console.error('Error editing product:', e);
+    
+    // Clean up uploaded files if update fails
+    deleteUploadedFiles(uploadedFiles);
+    
     res.status(500).json({
       success: false,
       message: "Edit product failed",
+      error: e.message
     });
   }
 };
-//* --------- delete any product --------------- */
+
+//* --------- Delete product --------------- */
+/**
+ * Delete a product and optionally its associated image files
+ * Note: Currently only deletes from database. File cleanup can be added if needed.
+ */
 const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const product = await Product.findByIdAndDelete(id); // ✅ أضف await
+    const product = await Product.findByIdAndDelete(id);
 
     if (!product) {
       return res.status(404).json({
@@ -138,6 +260,10 @@ const deleteProduct = async (req, res) => {
         message: "Delete product failed: Not found",
       });
     }
+
+    // Optionally delete associated image files
+    // This would require additional file system operations
+    // For now, we'll keep the files to avoid breaking references
 
     res.status(200).json({
       success: true,
@@ -148,6 +274,7 @@ const deleteProduct = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Delete product failed",
+      error: e.message
     });
   }
 };

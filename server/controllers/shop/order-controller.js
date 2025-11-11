@@ -172,15 +172,70 @@ const capturePayment = async (req, res) => {
 
 const getAllOrdersByUser = async (req, res) => {
     try {
-        const { userId } = req.params;
-        const orders = await Order.find({ userId });
-
-        if (!orders.length) {
-            return res.status(404).json({
+        // Get userId from params (could be 'id' or 'userId' depending on route)
+        const userId = req.params.userId || req.params.id;
+        const requestUserId = req.user?.id || req.userId;
+        
+        // Debug: Log user IDs for troubleshooting
+        console.log('🔍 Order access check:', {
+            paramUserId: userId,
+            requestUserId: requestUserId,
+            userRole: req.user?.role,
+            idsMatch: String(requestUserId) === String(userId)
+        });
+        
+        // Check authorization - user can only see their own orders unless admin
+        // Convert both to strings for comparison (handles ObjectId vs string)
+        if (String(requestUserId) !== String(userId) && req.user?.role !== 'admin') {
+            console.log('❌ Access denied:', {
+                requestUserId: String(requestUserId),
+                paramUserId: String(userId),
+                areEqual: String(requestUserId) === String(userId)
+            });
+            return res.status(403).json({
                 success: false,
-                message: 'No orders found!'
+                message: 'Access denied. You can only view your own orders.'
             });
         }
+        
+        // Ensure userId is a string for query (MongoDB handles both string and ObjectId)
+        const queryUserId = String(userId).trim();
+        
+        // Try to find orders - MongoDB will match string userId correctly
+        const orders = await Order.find({ userId: queryUserId })
+            .sort({ createdAt: -1 })
+            .populate('items.productId');
+        
+        console.log(`✅ Found ${orders.length} orders for user ${queryUserId}`);
+        
+        // If no orders found, also try with different userId formats (for debugging)
+        if (orders.length === 0) {
+            console.log('⚠️ No orders found. Checking alternative formats...');
+            const allOrders = await Order.find({}).limit(5).select('userId');
+            console.log('Sample userIds in database:', allOrders.map(o => o.userId));
+        }
+
+        // Format image URLs
+        orders.forEach(order => {
+            // Format product images
+            if (order.items && order.items.length > 0) {
+                order.items.forEach(item => {
+                    if (item.productImage && !item.productImage.startsWith('http')) {
+                        item.productImage = `http://localhost:5000${item.productImage.startsWith('/') ? '' : '/'}${item.productImage}`;
+                    }
+                });
+            }
+            
+            // Format payment proof URLs
+            if (order.payment?.proofImage?.url && !order.payment.proofImage.url.startsWith('http')) {
+                order.payment.proofImage.url = `http://localhost:5000${order.payment.proofImage.url}`;
+            }
+            
+            // Format transfer images
+            if (order.payment?.transferInfo?.image?.url && !order.payment.transferInfo.image.url.startsWith('http')) {
+                order.payment.transferInfo.image.url = `http://localhost:5000${order.payment.transferInfo.image.url}`;
+            }
+        });
 
         res.status(200).json({
             success: true,

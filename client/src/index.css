@@ -2,72 +2,250 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom Animations */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes glowLine {
+  0%, 100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes slideDown {
+  0% {
+    height: 0;
+  }
+  100% {
+    height: 100%;
+  }
+}
+
+@keyframes slideUp {
+  0% {
+    height: 0;
+  }
+  100% {
+    height: 100%;
+  }
+}
+
+@keyframes slideRight {
+  0% {
+    width: 0;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+@keyframes slideLeft {
+  0% {
+    width: 0;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-glowLine {
+  animation: glowLine 2s ease-in-out infinite;
+}
+
+.animate-slideDown {
+  animation: slideDown 0.5s ease-out;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.5s ease-out;
+}
+
+.animate-slideRight {
+  animation: slideRight 0.5s ease-out;
+}
+
+.animate-slideLeft {
+  animation: slideLeft 0.5s ease-out;
+}
+
 @layer base {
   :root {
+    /* Light Mode - Perfume Store Theme */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 45 100% 60%;
+    --primary-foreground: 240 100% 2%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 45 100% 60%;
     --radius: 0.5rem;
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    
+    /* Custom Perfume Store Colors - Light Mode */
+    --navy-primary: 240 100% 2%;
+    --navy-secondary: 240 50% 8%;
+    --gold-primary: 45 100% 60%;
+    --gold-secondary: 45 80% 50%;
+    
+    /* Light Mode Specific Colors */
+    --light-text-primary: 240 10% 3.9%;
+    --light-text-secondary: 240 5% 20%;
+    --light-card-bg: 0 0% 100%;
+    --light-card-border: 240 5.9% 90%;
+    --light-text-strong: 240 10% 1%;
+    --light-text-medium: 240 5% 15%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    /* Dark Mode - Navy Blue & Gold Theme */
+    --background: 240 100% 2%;
+    --foreground: 0 0% 98%;
+    --card: 240 50% 8%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 50% 8%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 45 100% 60%;
+    --primary-foreground: 240 100% 2%;
+    --secondary: 240 50% 8%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 50% 8%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 50% 8%;
+    --accent-foreground: 0 0% 98%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 50% 8%;
+    --input: 240 50% 8%;
+    --ring: 45 100% 60%;
+    --chart-1: 45 100% 60%;
+    --chart-2: 240 50% 40%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    
+    /* Custom Perfume Store Colors - Dark Mode */
+    --navy-primary: 240 100% 2%;
+    --navy-secondary: 240 50% 8%;
+    --gold-primary: 45 100% 60%;
+    --gold-secondary: 45 80% 50%;
+    
+    /* Dark Mode Specific Colors */
+    --dark-text-primary: 0 0% 98%;
+    --dark-text-secondary: 0 0% 85%;
+    --dark-card-bg: 240 50% 8%;
+    --dark-card-border: 240 50% 8%;
+    --dark-text-strong: 0 0% 100%;
+    --dark-text-medium: 0 0% 90%;
   }
 }
 
 @layer base {
   * {
     @apply border-border;
+    
   }
   body {
     @apply bg-background text-foreground;
   }
 }
+/* Remove caret, outline, and focus rings globally */
+*,
+*:focus,
+*:focus-visible,
+*:focus-within,
+*:active {
+  /* outline: none !important; */
+  /* box-shadow: none !important; */
+  /* ring: none !important; */
+  /* --tw-ring-offset-shadow: none !important; */
+  /* --tw-ring-shadow: none !important; */
+}
 
+/* Remove text cursor (caret) from all elements except actual text inputs */
+*:not(input):not(textarea) {
+  caret-color: transparent !important;
+}
+
+/* Keep text selection functional for actual text inputs and textareas */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+textarea {
+  caret-color: auto !important;
+  user-select: text !important;
+}
+
+/* Remove text cursor on clickable/interactive elements */
+button,
+a,
+div[role="button"],
+label,
+select,
+[tabindex],
+[onclick],
+[role="menuitem"],
+[role="option"],
+[role="button"] {
+  cursor: pointer;
+  user-select: none !important;
+  -webkit-user-select: none !important;
+  -moz-user-select: none !important;
+  -ms-user-select: none !important;
+  caret-color: transparent !important;
+}
+
+/* Remove focus ring from Tailwind classes */
+.focus\:ring-0:focus,
+.focus\:ring-2:focus,
+.focus\:ring:focus,
+.focus\:outline-none:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  /* 'ring' is not a valid CSS property, so it has been removed. */
+}
+
+/* Remove focus styles from Radix UI and shadcn/ui components */
+[data-radix-focus-guard],
+[data-radix-dialog-content],
+[data-radix-dropdown-menu-content],
+[data-radix-select-content],
+[data-radix-popper-content-wrapper] {
+  outline: none !important;
+  box-shadow: none !important;
+}
 @keyframes toastLaser {
   from {
     transform: translateX(-100%);
@@ -108,3 +286,538 @@
   width: 0;
   height: 0;
 }
+
+/* Perfume Store Custom Styles */
+@layer utilities {
+  .glow-text {
+    text-shadow: 0 0 8px hsl(var(--primary) / 0.8);
+  }
+  
+  .glow-gold {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+  }
+  
+  .glow-navy {
+    box-shadow: 0 0 20px hsl(var(--navy-primary) / 0.5);
+  }
+  
+  /* Light mode specific glow effects */
+  .light .glow-text {
+    text-shadow: 0 0 8px hsl(var(--primary) / 0.9);
+  }
+  
+  .light .glow-gold {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.4);
+  }
+  
+  /* Dark mode specific glow effects */
+  .dark .glow-text {
+    text-shadow: 0 0 8px hsl(var(--primary) / 0.8);
+  }
+  
+  .dark .glow-gold {
+    box-shadow: 0 0 20px hsl(var(--primary) / 0.3);
+  }
+  
+  .luxury-gradient {
+    background: hsl(var(--background));
+  }
+  
+  /* Light mode specific gradient */
+  .light .luxury-gradient {
+    background: linear-gradient(135deg, hsl(var(--light-card-bg)) 0%, hsl(var(--secondary)) 50%, hsl(var(--light-card-bg)) 100%);
+    color: hsl(var(--light-text-strong));
+  }
+  
+  /* Dark mode specific gradient */
+  .dark .luxury-gradient {
+    background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--navy-secondary)) 50%, hsl(var(--background)) 100%);
+    color: hsl(var(--dark-text-strong));
+  }
+  
+  /* Light mode specific navy gradients */
+  .light .bg-gradient-to-br.from-navy-950.via-navy-900.to-navy-950 {
+    background: linear-gradient(135deg, hsl(var(--light-card-bg)) 0%, hsl(var(--secondary)) 50%, hsl(var(--light-card-bg)) 100%);
+    color: hsl(var(--light-text-strong));
+  }
+  
+  /* Dark mode specific navy gradients */
+  .dark .bg-gradient-to-br.from-navy-950.via-navy-900.to-navy-950 {
+    background: linear-gradient(135deg, hsl(var(--background)) 0%, hsl(var(--navy-secondary)) 50%, hsl(var(--background)) 100%);
+    color: hsl(var(--dark-text-strong));
+  }
+  
+  /* Remove unnecessary borders */
+  .light * {
+    border-color: transparent;
+  }
+  
+  .dark * {
+    border-color: transparent;
+  }
+  
+  
+  /* Swiper Custom Styles for Featured Products */
+ 
+  /* Responsive adjustments */
+  @media (max-width: 1024px) {
+    .swiper-button-prev-featured,
+    .swiper-button-next-featured {
+      display: none !important;
+    }
+    
+    .featured-products-3d-carousel {
+      padding: 20px 0 40px 0 !important;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .featured-products-mobile-carousel {
+      padding: 10px 0 !important;
+    }
+    
+    .featured-products-mobile-carousel .swiper-slide {
+      padding: 0 8px !important;
+    }
+  }
+
+  /* Mobile Carousel Styles */
+  
+
+  /* Only apply borders to specific elements that need them */
+  .light .perfume-card,
+  .light .elegant-border,
+  .light .border {
+    border-color: hsl(var(--light-card-border));
+  }
+  
+  .dark .perfume-card,
+  .dark .elegant-border,
+  .dark .border {
+    border-color: hsl(var(--dark-card-border));
+  }
+  
+  .gold-gradient {
+    background: linear-gradient(135deg, hsl(var(--gold-primary)) 0%, hsl(var(--gold-secondary)) 50%, hsl(var(--gold-primary)) 100%);
+  }
+  
+  .perfume-card {
+    background: hsl(var(--card) / 0.95);
+    backdrop-filter: blur(10px);
+    border: none;
+    color: hsl(var(--card-foreground));
+  }
+  
+  .perfume-card:hover {
+    box-shadow: 0 0 30px hsl(var(--primary) / 0.2);
+  }
+  
+  /* Light mode specific card styling */
+  .light .perfume-card {
+    background: hsl(var(--light-card-bg) / 0.98);
+    border: none;
+    color: hsl(var(--light-text-strong));
+  }
+  
+  .light .perfume-card:hover {
+    box-shadow: 0 0 30px hsl(var(--primary) / 0.3);
+  }
+  
+  /* Dark mode specific card styling */
+  .dark .perfume-card {
+    background: hsl(var(--dark-card-bg) / 0.95);
+    border: none;
+    color: hsl(var(--dark-text-strong));
+  }
+  
+  .dark .perfume-card:hover {
+    box-shadow: 0 0 30px hsl(var(--primary) / 0.2);
+  }
+  
+  .navy-bg {
+    background-color: hsl(var(--navy-primary));
+  }
+  
+  .gold-text {
+    color: hsl(var(--gold-primary));
+  }
+  
+  .navy-text {
+    color: hsl(var(--navy-primary));
+  }
+  
+  .elegant-border {
+    border: none;
+  }
+  
+  .elegant-border:hover {
+    border: none;
+  }
+  
+  /* Light mode specific border styling */
+  .light .elegant-border {
+    border: none;
+  }
+  
+  .light .elegant-border:hover {
+    border: none;
+  }
+  
+  /* Dark mode specific border styling */
+  .dark .elegant-border {
+    border: none;
+  }
+  
+  .dark .elegant-border:hover {
+    border: none;
+  }
+  
+  /* Light mode specific text colors */
+  .light .text-white {
+    color: hsl(var(--light-text-strong)) !important;
+  }
+  
+  .light .text-gold-300 {
+    color: hsl(var(--primary)) !important;
+  }
+  
+  .light .text-gold-950 {
+    color: hsl(var(--primary)) !important;
+  }
+  
+  /* Dark mode specific text colors */
+  .dark .text-white {
+    color: hsl(var(--dark-text-strong)) !important;
+  }
+  
+  .dark .text-gold-300 {
+    color: hsl(var(--primary)) !important;
+  }
+  
+  .dark .text-gold-950 {
+    color: hsl(var(--primary)) !important;
+  }
+}
+
+/* Animation Keyframes */
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideRight {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideLeft {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes glowLine {
+  0%, 100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-slideDown {
+  animation: slideDown 0.5s ease-out;
+}
+
+.animate-slideUp {
+  animation: slideUp 0.5s ease-out;
+}
+
+.animate-slideRight {
+  animation: slideRight 0.5s ease-out;
+}
+
+.animate-slideLeft {
+  animation: slideLeft 0.5s ease-out;
+}
+
+.animate-glowLine {
+  animation: glowLine 3s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(210, 176, 101, 0.4), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Featured Products Swiper Pagination Styles */
+
+/* ========== 🎯 CLEAN SOLUTION: Fix Button Click Issues ========== */
+
+/* 
+  المشكلة الأساسية: Swiper يضع طبقة تفاعلية فوق المحتوى للسحب
+  الحل: نسمح للـ Swiper بالسحب لكن نرفع الأزرار فوقه بـ z-index
+*/
+
+/* 1. Allow Swiper to be draggable BUT make sure buttons work */
+
+
+/* 6. Pagination should not block content */
+
+
+
+
+
+
+
+
+/* 11. Fix navigation in /shop/home page */
+/* Ensure header navigation always works */
+header nav,
+header a,
+header button,
+header [role="button"],
+header label {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 1000;
+}
+
+/* Hero section fixes */
+.luxury-bg > div:first-child {
+  position: relative;
+  z-index: 1;
+}
+
+/* Product sections should be above hero */
+.luxury-bg > section {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto !important;
+}
+
+/* Ensure swipe handlers don't block navigation */
+[data-swipeable] {
+  touch-action: pan-y pinch-zoom;
+}
+
+/* Buttons and links in hero section */
+/* .luxury-bg button,
+.luxury-bg a {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 50;
+  touch-action: manipulation;
+} */
+
+/* Prevent any overlay from blocking clicks - BUT allow product sections */
+.luxury-bg > div:first-child [class*="overlay"],
+.luxury-bg > div:first-child [class*="gradient"] {
+  pointer-events: none !important;
+}
+
+/* Ensure text doesn't capture clicks - BUT only in hero section */
+.luxury-bg > div:first-child h1,
+.luxury-bg > div:first-child h2,
+.luxury-bg > div:first-child h3,
+.luxury-bg > div:first-child p,
+.luxury-bg > div:first-child span:not(button span):not(a span) {
+  pointer-events: none;
+}
+
+/* Ensure product sections are fully interactive */
+.luxury-bg section,
+.luxury-bg section * {
+  pointer-events: auto !important;
+}
+
+/* But keep overlays in product sections non-interactive */
+.luxury-bg section [class*="overlay"],
+.luxury-bg section [class*="gradient"]:not(.bg-gradient-to-r):not(.bg-gradient-to-br) {
+  pointer-events: none !important;
+}
+
+/* Ensure product cards and buttons are clickable */
+.luxury-bg section .luxury-card,
+.luxury-bg section button,
+.luxury-bg section a,
+.luxury-bg section [role="button"],
+.luxury-bg section .group {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 10;
+}
+
+/* Tailwind + custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.1); 
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #FFD700, #FFA500); /* gold gradient */
+  border-radius: 8px;
+  border: 2px solid rgba(0,0,0,0.2);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #FFC700, #FF8C00);
+}
+
+/* Date input styling for dark/light mode support */
+input[type="date"] {
+  color-scheme: light;
+  position: relative;
+  cursor: pointer;
+}
+
+/* Hide default calendar picker icon - we use custom icon instead */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  z-index: 1;
+}
+
+/* Light mode - date text styling */
+input[type="date"]::-webkit-datetime-edit-text,
+input[type="date"]::-webkit-datetime-edit-month-field,
+input[type="date"]::-webkit-datetime-edit-day-field,
+input[type="date"]::-webkit-datetime-edit-year-field {
+  color: hsl(var(--foreground));
+  padding: 0 2px;
+}
+
+input[type="date"]::-webkit-datetime-edit-month-field:focus,
+input[type="date"]::-webkit-datetime-edit-day-field:focus,
+input[type="date"]::-webkit-datetime-edit-year-field:focus {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  border-radius: 2px;
+  outline: none;
+}
+
+/* Dark mode - use dark color scheme for calendar popup */
+.dark input[type="date"] {
+  color-scheme: dark;
+}
+
+/* Hide default calendar picker icon in dark mode too */
+.dark input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  z-index: 1;
+}
+
+/* Dark mode - date text styling */
+.dark input[type="date"]::-webkit-datetime-edit-text,
+.dark input[type="date"]::-webkit-datetime-edit-month-field,
+.dark input[type="date"]::-webkit-datetime-edit-day-field,
+.dark input[type="date"]::-webkit-datetime-edit-year-field {
+  color: hsl(var(--foreground));
+  padding: 0 2px;
+}
+
+.dark input[type="date"]::-webkit-datetime-edit-month-field:focus,
+.dark input[type="date"]::-webkit-datetime-edit-day-field:focus,
+.dark input[type="date"]::-webkit-datetime-edit-year-field:focus {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  border-radius: 2px;
+  outline: none;
+}
+
+/* Firefox date picker styling */
+input[type="date"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+/* Hide Firefox calendar picker icon too */
+input[type="date"]::-moz-calendar-picker-indicator {
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.dark input[type="date"]::-moz-calendar-picker-indicator {
+  opacity: 0;
+  position: absolute;
+  right: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  z-index: 1;
+}
+
+/* Ensure date input has proper spacing for icon */
+input[type="date"] {
+  padding-right: 2.5rem !important;
+}
+

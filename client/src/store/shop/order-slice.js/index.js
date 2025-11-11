@@ -29,14 +29,18 @@ export const capturePayment = createAsyncThunk(
 export const getAllOrderByUserId = createAsyncThunk(
     '/order/getAllOrderByUserId',
     async (userId) => {
-        const response = await axios.get(`http://localhost:5000/api/shop/order/list/${userId}`)
+        const response = await axios.get(`http://localhost:5000/api/users/${userId}/orders`, {
+            withCredentials: true
+        })
         return response.data
     })
 
 export const getOrderDetails = createAsyncThunk(
     '/order/getOrderDetails',
     async (id) => {
-        const response = await axios.get(`http://localhost:5000/api/shop/order/details/${id}`)
+        const response = await axios.get(`http://localhost:5000/api/orders/${id}`, {
+            withCredentials: true
+        })
         return response.data
     })
 

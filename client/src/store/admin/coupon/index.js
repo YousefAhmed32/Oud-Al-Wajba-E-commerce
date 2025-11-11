@@ -72,7 +72,7 @@ const AdminCouponSlice = createSlice({
       })
       .addCase(fetchAllCoupons.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.couponList = action.payload.coupons; 
+        state.couponList = action.payload?.data || action.payload?.coupons || action.payload?.couponList || []; 
       })
       .addCase(fetchAllCoupons.rejected, (state) => {
         state.isLoading = false;

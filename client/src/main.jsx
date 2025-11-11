@@ -7,6 +7,9 @@ import { Provider } from 'react-redux'
 import store from './store/store.js'
 import { Toaster } from './components/ui/toaster'
 
+// Set dark mode as default
+document.documentElement.classList.add('dark');
+
 createRoot(document.getElementById('root')).render(
   <BrowserRouter>
     <Provider store={store}>
