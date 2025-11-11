@@ -121,7 +121,7 @@ const FeaturedProducts = () => {
           <p className="text-gray-600 dark:text-white/70 text-sm leading-relaxed line-clamp-2 flex-grow">
             {product.description || "منتج فاخر متميز"}
           </p>
-          
+          {/* test */}
           {/* Price Section */}
           <div className="pt-2 mt-auto">
             <div className="flex items-center gap-2 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 border-2 border-gray-200 dark:border-luxury-gold/40 p-4 rounded-xl shadow-sm">
