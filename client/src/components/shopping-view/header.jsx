@@ -35,6 +35,36 @@ import { Label } from "../ui/label";
 import { selectWishlistCount } from "@/store/shop/wishlist-slice";
 import { setProductDetails } from "@/store/shop/products-slice";
 
+// Helper function to get initials from username (supports Arabic and English)
+function getInitials(userName) {
+  // Handle null, undefined, or empty values
+  if (!userName) {
+    return '??';
+  }
+  
+  // Convert to string if it's not already
+  const nameStr = String(userName).trim();
+  
+  // Check if string is empty after trimming
+  if (!nameStr || nameStr.length === 0) {
+    return '??';
+  }
+  
+  // Use Array.from to properly handle Unicode characters (Arabic, emojis, etc.)
+  // This correctly handles multi-byte characters like Arabic letters
+  const chars = Array.from(nameStr);
+  
+  if (chars.length === 0) {
+    return '??';
+  }
+  
+  // Get first 2 characters and join them
+  const initials = chars.slice(0, 2).join('');
+  
+  // Return initials or '??' if somehow empty
+  return initials || '??';
+}
+
 function MenuItems({ isMobile = false }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -140,7 +170,7 @@ function HeaderRightContent({ isMobile = false }) {
           <DropdownMenuTrigger asChild>
             <Avatar className="bg-gold-950 dark:bg-gold-300 border-2 border-gold-400 dark:border-gold-500 hover:border-gold-300 dark:hover:border-gold-400 transition-all duration-300 cursor-pointer glow-gold hover:scale-105">
               <AvatarFallback className="text-navy-950 dark:text-navy-200 font-bold text-sm">
-                {user?.userName?.slice(0, 2).toUpperCase() || "??"}
+                {getInitials(user?.userName)}
               </AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
@@ -165,7 +195,7 @@ function HeaderRightContent({ isMobile = false }) {
             <div className="mb-4 mt-4 flex items-center gap-4">
               <Avatar className="h-10 w-10 border-2 border-gold-400 dark:border-gold-500 shadow-gold-500/50 shadow-lg glow-gold">
                 <AvatarFallback className="text-navy-950 dark:text-navy-950 font-bold text-xl dark:text-yellow-500">
-                  {user?.userName?.slice(0, 2).toUpperCase() || "??"}
+                  {getInitials(user?.userName)}
                 </AvatarFallback>
               </Avatar>
               <div className="flex flex-col">
