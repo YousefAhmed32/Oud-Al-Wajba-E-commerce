@@ -28,7 +28,7 @@ function Footer() {
                 <div className="absolute inset-0 bg-gradient-to-br from-gold-500 to-yellow-600 rounded-full blur-md opacity-50 group-hover:opacity-75 transition-opacity duration-300" />
                 <div className="relative w-14 h-14 rounded-full bg-gradient-to-br from-gold-500 to-yellow-600 flex items-center justify-center shadow-[0_0_20px_rgba(255,215,0,0.4)] group-hover:shadow-[0_0_30px_rgba(255,215,0,0.6)] transition-all duration-300 group-hover:scale-110">
                   <img
-                    src="/assets/logo2.png"
+                    src="/assets/logo3.png"
                     alt="عود الوجبة"
                     className="w-10 h-10 object-cover rounded-full"
                   />
