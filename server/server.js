@@ -118,19 +118,50 @@
         
         // Serve uploaded files statically
         const path = require('path');
-        app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-        
-        // Ensure upload directories exist
         const fs = require('fs');
+        
+        // Get absolute path for uploads directory
+        const uploadsBasePath = path.resolve(__dirname, 'uploads');
         const uploadsDirs = [
-            path.join(__dirname, 'uploads/products'),
-            path.join(__dirname, 'uploads/order-proofs')
+            path.join(uploadsBasePath, 'products'),
+            path.join(uploadsBasePath, 'order-proofs')
         ];
+        
+        // Ensure upload directories exist with proper permissions
         uploadsDirs.forEach(dir => {
-            if (!fs.existsSync(dir)) {
-                fs.mkdirSync(dir, { recursive: true });
+            try {
+                if (!fs.existsSync(dir)) {
+                    fs.mkdirSync(dir, { recursive: true, mode: 0o755 });
+                    console.log(`✅ Created upload directory: ${dir}`);
+                } else {
+                    // Ensure directory has correct permissions (755 = rwxr-xr-x)
+                    try {
+                        fs.chmodSync(dir, 0o755);
+                    } catch (chmodError) {
+                        console.warn(`⚠️ Could not set permissions for ${dir}:`, chmodError.message);
+                    }
+                }
+                
+                // Verify directory is writable
+                fs.accessSync(dir, fs.constants.W_OK);
+                console.log(`✅ Upload directory is writable: ${dir}`);
+            } catch (error) {
+                console.error(`❌ Error setting up upload directory ${dir}:`, error);
+                // Don't exit - let the app start but log the error
             }
         });
+        
+        // Serve static files from uploads directory
+        // This allows accessing files via: http://domain.com/uploads/products/filename.jpg
+        app.use('/uploads', express.static(uploadsBasePath, {
+            dotfiles: 'deny',
+            index: false,
+            maxAge: '1d', // Cache for 1 day
+            etag: true,
+            lastModified: true
+        }));
+        
+        console.log(`📁 Serving static files from: ${uploadsBasePath}`);
         
         app.use('/api/auth', authRoutes);
         app.use('/api/admin/products',adminProductsRoutes)
@@ -174,11 +205,72 @@
         app.get('/health', (req, res) => {
             console.log('Server is running');
             res.status(200).send('Server is running');
-    });
+        });
+        
+        // Test upload endpoint - for testing file uploads on server
+        // Usage: POST /api/test-upload with multipart/form-data field "testImage"
+        app.post('/api/test-upload', (req, res) => {
+            const { uploadSingleImage, getUploadPaths } = require('./middleware/upload');
+            
+            uploadSingleImage(req, res, (err) => {
+                if (err) {
+                    console.error('❌ Upload test error:', err);
+                    return res.status(400).json({
+                        success: false,
+                        error: err.message || 'Upload failed',
+                        details: err.toString()
+                    });
+                }
+                
+                if (!req.file) {
+                    return res.status(400).json({
+                        success: false,
+                        error: 'No file uploaded',
+                        message: 'Please send a file with field name "image"'
+                    });
+                }
+                
+                const uploadPaths = getUploadPaths();
+                const fileUrl = `/uploads/products/${req.file.filename}`;
+                
+                console.log('✅ Test upload successful:', {
+                    filename: req.file.filename,
+                    path: req.file.path,
+                    size: req.file.size,
+                    mimetype: req.file.mimetype,
+                    url: fileUrl
+                });
+                
+                res.json({
+                    success: true,
+                    message: 'File uploaded successfully',
+                    file: {
+                        filename: req.file.filename,
+                        originalName: req.file.originalname,
+                        path: req.file.path,
+                        size: req.file.size,
+                        mimetype: req.file.mimetype,
+                        url: fileUrl,
+                        fullUrl: `${req.protocol}://${req.get('host')}${fileUrl}`
+                    },
+                    uploadPaths: uploadPaths,
+                    instructions: {
+                        testImage: `Visit: ${req.protocol}://${req.get('host')}${fileUrl}`,
+                        verifyFile: `Check if file exists at: ${req.file.path}`
+                    }
+                });
+            });
+        });
 
         server.listen(PORT, ()=> {
+            // Import upload utilities for logging
+            const { getUploadPaths } = require('./middleware/upload');
+            const uploadPaths = getUploadPaths();
             console.log(`🚀 Server is running on port ${PORT}`);
-            console.log(`📁 Local file storage: ${path.join(__dirname, 'uploads/products')}`);
+            console.log(`📁 Upload base directory: ${uploadPaths.base}`);
+            console.log(`📁 Products upload directory: ${uploadPaths.products}`);
+            console.log(`📁 Order proofs upload directory: ${uploadPaths.orderProofs}`);
+            console.log(`🌐 Static files URL: http://localhost:${PORT}/uploads/`);
             console.log(`🌐 CORS Origin: ${CORS_ORIGIN}`);
             console.log(`🔌 Socket.io ready for real-time notifications`);
         });

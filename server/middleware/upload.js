@@ -3,27 +3,76 @@ const path = require('path');
 const fs = require('fs');
 
 /**
+ * Get absolute path for uploads directory
+ * Works correctly on both local and server environments
+ */
+const getUploadsPath = (subfolder = '') => {
+  const baseDir = path.resolve(__dirname, '..');
+  const uploadsDir = path.join(baseDir, 'uploads', subfolder);
+  return uploadsDir;
+};
+
+/**
+ * Ensure directory exists with proper permissions
+ * Creates directory recursively with 755 permissions (rwxr-xr-x)
+ */
+const ensureDirectoryExists = (dirPath) => {
+  try {
+    if (!fs.existsSync(dirPath)) {
+      fs.mkdirSync(dirPath, { recursive: true, mode: 0o755 });
+      console.log(`✅ Created directory: ${dirPath}`);
+    } else {
+      // Ensure directory has correct permissions
+      fs.chmodSync(dirPath, 0o755);
+    }
+    
+    // Verify write permissions
+    try {
+      fs.accessSync(dirPath, fs.constants.W_OK);
+    } catch (err) {
+      console.error(`❌ No write permission for directory: ${dirPath}`);
+      throw err;
+    }
+    
+    return true;
+  } catch (error) {
+    console.error(`❌ Error ensuring directory exists: ${dirPath}`, error);
+    throw error;
+  }
+};
+
+/**
  * Configure disk storage for multer
  * Stores files in /uploads/products directory
  */
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../uploads/products');
-    
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    try {
+      const uploadDir = getUploadsPath('products');
+      
+      // Create directory if it doesn't exist with proper permissions
+      ensureDirectoryExists(uploadDir);
+      
+      console.log(`📁 Product upload destination: ${uploadDir}`);
+      cb(null, uploadDir);
+    } catch (error) {
+      console.error('❌ Error setting upload destination:', error);
+      cb(error, null);
     }
-    
-    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    // Generate unique filename: timestamp-randomnumber-originalname
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    const basename = path.basename(file.originalname, ext);
-    const filename = `${basename}-${uniqueSuffix}${ext}`;
-    cb(null, filename);
+    try {
+      // Generate unique filename: timestamp-randomnumber-originalname
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      const basename = path.basename(file.originalname, ext).replace(/[^a-zA-Z0-9-_]/g, '_');
+      const filename = `${basename}-${uniqueSuffix}${ext}`;
+      console.log(`📝 Generated filename: ${filename}`);
+      cb(null, filename);
+    } catch (error) {
+      console.error('❌ Error generating filename:', error);
+      cb(error, null);
+    }
   }
 });
 
@@ -60,17 +109,30 @@ const upload = multer({
  */
 const proofStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../uploads/order-proofs');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    try {
+      const uploadDir = getUploadsPath('order-proofs');
+      
+      // Create directory if it doesn't exist with proper permissions
+      ensureDirectoryExists(uploadDir);
+      
+      console.log(`📁 Order proof upload destination: ${uploadDir}`);
+      cb(null, uploadDir);
+    } catch (error) {
+      console.error('❌ Error setting proof upload destination:', error);
+      cb(error, null);
     }
-    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname);
-    const filename = `proof-${uniqueSuffix}${ext}`;
-    cb(null, filename);
+    try {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const ext = path.extname(file.originalname);
+      const filename = `proof-${uniqueSuffix}${ext}`;
+      console.log(`📝 Generated proof filename: ${filename}`);
+      cb(null, filename);
+    } catch (error) {
+      console.error('❌ Error generating proof filename:', error);
+      cb(error, null);
+    }
   }
 });
 
@@ -114,11 +176,24 @@ const deleteUploadedFiles = (files) => {
     if (file.path) {
       fs.unlink(file.path, (err) => {
         if (err) {
-          console.error(`Error deleting file ${file.path}:`, err);
+          console.error(`❌ Error deleting file ${file.path}:`, err);
+        } else {
+          console.log(`🗑️ Deleted file: ${file.path}`);
         }
       });
     }
   });
+};
+
+/**
+ * Get upload paths for logging/debugging
+ */
+const getUploadPaths = () => {
+  return {
+    products: getUploadsPath('products'),
+    orderProofs: getUploadsPath('order-proofs'),
+    base: getUploadsPath()
+  };
 };
 
 module.exports = {
@@ -127,6 +202,8 @@ module.exports = {
   uploadSingleImage,
   uploadPaymentProof,
   proofUpload,
-  deleteUploadedFiles
+  deleteUploadedFiles,
+  getUploadPaths,
+  ensureDirectoryExists
 };
 
