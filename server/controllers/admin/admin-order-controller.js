@@ -1,4 +1,5 @@
 const Order = require('../../models/Order');
+const User = require('../../models/User');
 const fs = require('fs');
 const path = require('path');
 
@@ -108,6 +109,53 @@ const approveOrder = async (req, res) => {
     
     await order.save();
     
+    // Emit Socket.io notification for order confirmation
+    const io = req.app.get('io');
+    if (io) {
+      // Get user name from database
+      let userName = 'مستخدم';
+      try {
+        const user = await User.findById(order.userId);
+        if (user && user.userName) {
+          userName = user.userName;
+        }
+      } catch (userError) {
+        console.error('Error fetching user name:', userError);
+      }
+      
+      // Prepare order items details
+      const itemsDetails = order.items.map(item => ({
+        title: item.title || 'منتج',
+        quantity: item.quantity || 1,
+        price: item.price || 0,
+        total: (item.quantity || 1) * (item.price || 0)
+      }));
+      
+      // Emit to admin room for order confirmation notification
+      io.to('admin').emit('orderConfirmed', {
+        orderId: order._id,
+        orderNumber: order._id.toString().substring(0, 8),
+        userId: order.userId,
+        userName: userName,
+        total: order.totalAfterDiscount || order.total || 0,
+        totalBeforeDiscount: order.totalBeforeDiscount || 0,
+        subtotal: order.subtotal || 0,
+        shipping: order.shipping || 0,
+        discount: order.discount || order.couponDiscount || 0,
+        paymentMethod: order.payment?.method || order.paymentMethod || 'غير محدد',
+        orderStatus: order.orderStatus,
+        paymentStatus: order.payment?.status || 'approved',
+        itemsCount: order.items?.length || 0,
+        items: itemsDetails,
+        address: order.address,
+        createdAt: order.createdAt,
+        confirmedAt: new Date(),
+        message: `تم تأكيد الطلب #${order._id.toString().substring(0, 8)} - ${userName} - ${order.totalAfterDiscount || order.total || 0} QR`
+      });
+      
+      console.log(`📢 Order confirmation notification sent: Order #${order._id.toString().substring(0, 8)} - User: ${userName}`);
+    }
+    
     res.status(200).json({
       success: true,
       message: 'Order approved successfully',
@@ -200,6 +248,7 @@ const updateOrderStatus = async (req, res) => {
       });
     }
     
+    const previousStatus = order.orderStatus;
     order.orderStatus = orderStatus;
     
     // Update payment status based on order status
@@ -233,6 +282,53 @@ const updateOrderStatus = async (req, res) => {
     }
     
     await order.save();
+    
+    // Emit Socket.io notification when order is confirmed/accepted
+    const io = req.app.get('io');
+    if (io && (orderStatus === 'accepted' || orderStatus === 'confirmed' || orderStatus === 'processing') && previousStatus !== orderStatus) {
+      // Get user name from database
+      let userName = 'مستخدم';
+      try {
+        const user = await User.findById(order.userId);
+        if (user && user.userName) {
+          userName = user.userName;
+        }
+      } catch (userError) {
+        console.error('Error fetching user name:', userError);
+      }
+      
+      // Prepare order items details
+      const itemsDetails = order.items.map(item => ({
+        title: item.title || 'منتج',
+        quantity: item.quantity || 1,
+        price: item.price || 0,
+        total: (item.quantity || 1) * (item.price || 0)
+      }));
+      
+      // Emit to admin room for order confirmation notification
+      io.to('admin').emit('orderConfirmed', {
+        orderId: order._id,
+        orderNumber: order._id.toString().substring(0, 8),
+        userId: order.userId,
+        userName: userName,
+        total: order.totalAfterDiscount || order.total || 0,
+        totalBeforeDiscount: order.totalBeforeDiscount || 0,
+        subtotal: order.subtotal || 0,
+        shipping: order.shipping || 0,
+        discount: order.discount || order.couponDiscount || 0,
+        paymentMethod: order.payment?.method || order.paymentMethod || 'غير محدد',
+        orderStatus: order.orderStatus,
+        paymentStatus: order.payment?.status || 'approved',
+        itemsCount: order.items?.length || 0,
+        items: itemsDetails,
+        address: order.address,
+        createdAt: order.createdAt,
+        confirmedAt: new Date(),
+        message: `تم تأكيد الطلب #${order._id.toString().substring(0, 8)} - ${userName} - ${order.totalAfterDiscount || order.total || 0} QR`
+      });
+      
+      console.log(`📢 Order confirmation notification sent: Order #${order._id.toString().substring(0, 8)} - User: ${userName} - Status: ${orderStatus}`);
+    }
     
     res.status(200).json({
       success: true,

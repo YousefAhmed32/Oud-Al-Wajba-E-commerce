@@ -443,12 +443,13 @@ function AdminProductsSimple() {
                         required
                       >
                         <option value="" className="bg-background text-foreground">اختر الفئة</option>
-                        <option value="perfumes" className="bg-background text-foreground">عطور</option>
+                        <option value="oud" className="bg-background text-foreground">عود</option>
+                        {/* <option value="perfumes" className="bg-background text-foreground">عطور</option>
                         <option value="cosmetics" className="bg-background text-foreground">مستحضرات تجميل</option>
                         <option value="skincare" className="bg-background text-foreground">العناية بالبشرة</option>
                         <option value="men" className="bg-background text-foreground">رجالي</option>
                         <option value="women" className="bg-background text-foreground">نسائي</option>
-                        <option value="kids" className="bg-background text-foreground">أطفال</option>
+                        <option value="kids" className="bg-background text-foreground">أطفال</option> */}
                       </select>
                     </div>
 

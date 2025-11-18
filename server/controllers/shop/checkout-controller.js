@@ -452,6 +452,14 @@ const createOrder = async (req, res) => {
         console.error('Error fetching user name:', userError);
       }
       
+      // Prepare order items details for notification
+      const itemsDetails = orderItemsWithImages.map(item => ({
+        title: item.title || 'منتج',
+        quantity: item.quantity || 1,
+        price: item.price || 0,
+        total: (item.quantity || 1) * (item.price || 0)
+      }));
+      
       // Emit to admin room for admin users
       io.to('admin').emit('newOrder', {
         orderId: newOrder._id,
@@ -460,10 +468,15 @@ const createOrder = async (req, res) => {
         userName: userName,
         total: totalAfterDiscount,
         totalBeforeDiscount: totalBeforeDiscount,
+        subtotal: subtotal,
+        shipping: shipping,
+        discount: discount,
         paymentMethod: paymentMethod,
         orderStatus: newOrder.orderStatus,
         paymentStatus: newOrder.payment.status,
         itemsCount: orderItemsWithImages.length,
+        items: itemsDetails,
+        address: addressData,
         createdAt: newOrder.createdAt,
         message: `طلب جديد #${newOrder._id.toString().substring(0, 8)} - ${paymentMethod} - ${totalAfterDiscount} QR`
       });

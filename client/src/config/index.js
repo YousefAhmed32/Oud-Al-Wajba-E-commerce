@@ -67,6 +67,7 @@
         { id: "accessories", label: "إكسسوارات" },
         { id: "footwear", label: "أحذية" },
         { id: "perfumes", label: "عطور" },
+        { id: "oud", label: "عود" },
         { id: "cosmetics", label: "مستحضرات تجميل" },
         { id: "skincare", label: "العناية بالبشرة" },
       ]

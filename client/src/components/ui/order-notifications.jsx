@@ -91,10 +91,16 @@ function OrderNotifications() {
           orderNumber: orderData.orderNumber,
           customerName: orderData.userName || 'مستخدم',
           amount: orderData.total,
+          totalBeforeDiscount: orderData.totalBeforeDiscount,
+          subtotal: orderData.subtotal,
+          shipping: orderData.shipping,
+          discount: orderData.discount,
           paymentMethod: orderData.paymentMethod,
           orderStatus: orderData.orderStatus,
           paymentStatus: orderData.paymentStatus,
-          itemsCount: orderData.itemsCount || 0
+          itemsCount: orderData.itemsCount || 0,
+          items: orderData.items || [],
+          address: orderData.address
         };
 
         setNotifications(prev => [newNotification, ...prev.slice(0, 19)]); // Keep only 20 notifications
@@ -102,6 +108,43 @@ function OrderNotifications() {
         // Show toast notification
         toast({
           title: "🛒 طلب جديد!",
+          description: `طلب #${orderData.orderNumber} من ${orderData.userName} - ${orderData.total} QR`,
+          variant: "default",
+        });
+      });
+
+      // Listen for order confirmation notifications
+      socketRef.current.on('orderConfirmed', (orderData) => {
+        console.log('✅ Order confirmation notification received:', orderData);
+        
+        const newNotification = {
+          id: Date.now(),
+          type: 'order_confirmed',
+          title: 'تم تأكيد الطلب',
+          message: orderData.message || `تم تأكيد الطلب #${orderData.orderNumber} - ${orderData.userName} - ${orderData.total} QR`,
+          timestamp: new Date(orderData.confirmedAt || Date.now()).toISOString(),
+          isRead: false,
+          orderId: orderData.orderId,
+          orderNumber: orderData.orderNumber,
+          customerName: orderData.userName || 'مستخدم',
+          amount: orderData.total,
+          totalBeforeDiscount: orderData.totalBeforeDiscount,
+          subtotal: orderData.subtotal,
+          shipping: orderData.shipping,
+          discount: orderData.discount,
+          paymentMethod: orderData.paymentMethod,
+          orderStatus: orderData.orderStatus,
+          paymentStatus: orderData.paymentStatus,
+          itemsCount: orderData.itemsCount || 0,
+          items: orderData.items || [],
+          address: orderData.address
+        };
+
+        setNotifications(prev => [newNotification, ...prev.slice(0, 19)]); // Keep only 20 notifications
+        
+        // Show toast notification
+        toast({
+          title: "✅ تم تأكيد الطلب!",
           description: `طلب #${orderData.orderNumber} من ${orderData.userName} - ${orderData.total} QR`,
           variant: "default",
         });
@@ -159,6 +202,8 @@ function OrderNotifications() {
     switch (type) {
       case 'new_order':
         return <ShoppingCart className="w-5 h-5 text-green-500" />;
+      case 'order_confirmed':
+        return <CheckCircle className="w-5 h-5 text-gold-950" />;
       case 'payment_received':
         return <DollarSign className="w-5 h-5 text-blue-500" />;
       case 'order_shipped':
@@ -172,6 +217,8 @@ function OrderNotifications() {
     switch (type) {
       case 'new_order':
         return 'border-l-green-500 bg-green-500/5';
+      case 'order_confirmed':
+        return 'border-l-gold-950 bg-gold-950/5';
       case 'payment_received':
         return 'border-l-blue-500 bg-blue-500/5';
       case 'order_shipped':
@@ -269,13 +316,33 @@ function OrderNotifications() {
                       </p>
                       
                       {/* Order Details */}
-                      {notification.type === 'new_order' && (
+                      {(notification.type === 'new_order' || notification.type === 'order_confirmed') && (
                         <div className="bg-navy-950/30 rounded-lg p-3 mb-2">
                           <div className="flex items-center gap-2 mb-2">
                             <User className="w-4 h-4 text-gold-950" />
-                            <span className="text-xs text-gold-300">{notification.customerName}</span>
+                            <span className="text-xs text-gold-300 font-semibold">{notification.customerName}</span>
                           </div>
-                          <div className="space-y-1 text-xs">
+                          
+                          {/* Order Items */}
+                          {notification.items && notification.items.length > 0 && (
+                            <div className="mb-2 space-y-1">
+                              <div className="text-xs font-semibold text-gold-300 mb-1">المنتجات:</div>
+                              {notification.items.slice(0, 3).map((item, idx) => (
+                                <div key={idx} className="flex justify-between text-xs bg-navy-950/40 rounded px-2 py-1">
+                                  <span className="text-gold-300 truncate flex-1">{item.title}</span>
+                                  <span className="text-gold-950 ml-2">×{item.quantity}</span>
+                                  <span className="text-gold-950 ml-2">{item.total} QR</span>
+                                </div>
+                              ))}
+                              {notification.items.length > 3 && (
+                                <div className="text-xs text-gold-400 text-center">
+                                  +{notification.items.length - 3} منتج آخر
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          <div className="space-y-1 text-xs border-t border-gold-950/20 pt-2 mt-2">
                             <div className="flex justify-between">
                               <span className="text-gold-300">طريقة الدفع:</span>
                               <span className="text-gold-950">{notification.paymentMethod || 'غير محدد'}</span>
@@ -284,13 +351,31 @@ function OrderNotifications() {
                               <span className="text-gold-300">عدد المنتجات:</span>
                               <span className="text-gold-950">{notification.itemsCount || 0}</span>
                             </div>
+                            {notification.subtotal && (
+                              <div className="flex justify-between">
+                                <span className="text-gold-300">المجموع الفرعي:</span>
+                                <span className="text-gold-950">{notification.subtotal} QR</span>
+                              </div>
+                            )}
+                            {notification.shipping !== undefined && (
+                              <div className="flex justify-between">
+                                <span className="text-gold-300">الشحن:</span>
+                                <span className="text-gold-950">{notification.shipping} QR</span>
+                              </div>
+                            )}
+                            {notification.discount > 0 && (
+                              <div className="flex justify-between">
+                                <span className="text-gold-300">الخصم:</span>
+                                <span className="text-green-400">-{notification.discount} QR</span>
+                              </div>
+                            )}
                             <div className="flex justify-between">
                               <span className="text-gold-300">حالة الطلب:</span>
                               <span className="text-gold-950">{notification.orderStatus || 'pending'}</span>
                             </div>
                           </div>
                           <div className="flex justify-between items-center mt-2 pt-2 border-t border-gold-950/20">
-                            <span className="text-xs text-gold-300">المجموع:</span>
+                            <span className="text-xs text-gold-300 font-semibold">المجموع الكلي:</span>
                             <span className="text-sm font-bold text-gold-950">{notification.amount} QR</span>
                           </div>
                           <Button
