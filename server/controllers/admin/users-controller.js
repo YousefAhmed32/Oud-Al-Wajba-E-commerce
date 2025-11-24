@@ -219,53 +219,111 @@ const updateUserStatus = async (req, res) => {
  */
 const getUsersStats = async (req, res) => {
   try {
-    const { timeframe = '30d' } = req.query;
+    const { timeframe = 'all' } = req.query;
     
     const now = new Date();
     let startDate;
     
+    // Calculate start date based on timeframe
     switch (timeframe) {
-      case '1h':
-        startDate = new Date(now.getTime() - 60 * 60 * 1000);
+      case '24h':
+        // Last 24 hours (start of today)
+        startDate = new Date(now);
+        startDate.setHours(0, 0, 0, 0);
         break;
       case '7d':
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        // Last 7 days (6 days + today)
+        startDate = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
+        startDate.setHours(0, 0, 0, 0);
         break;
       case '30d':
-        startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        // Last 30 days (29 days + today)
+        startDate = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000);
+        startDate.setHours(0, 0, 0, 0);
         break;
+      case '3m':
+        // Last 3 months
+        startDate = new Date(now);
+        startDate.setMonth(startDate.getMonth() - 3);
+        startDate.setHours(0, 0, 0, 0);
+        break;
+      case '1y':
+        // Last 12 months (11 months + current month)
+        startDate = new Date(now);
+        startDate.setMonth(startDate.getMonth() - 11);
+        startDate.setDate(1);
+        startDate.setHours(0, 0, 0, 0);
+        break;
+      case 'all':
       default:
-        startDate = new Date(0); // All time
+        // Since creation (from 2025-01-01 or beginning of time)
+        startDate = new Date('2025-01-01');
+        break;
     }
     
-    // Total users
+    // Total users (all time)
     const totalUsers = await User.countDocuments({});
     
-    // Active users
+    // Active users (all time)
     const activeUsers = await User.countDocuments({ status: 'active' });
     
     // New users in timeframe
     const newUsers = await User.countDocuments({
-      createdAt: { $gte: startDate }
+      createdAt: { $gte: startDate, $lte: now }
     });
     
-    // Users active in last hour (based on lastLogin)
+    // Users active in last 24 hours (based on lastLogin)
+    const last24HoursDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const lastHourActive = await User.countDocuments({
-      lastLogin: { $gte: new Date(now.getTime() - 60 * 60 * 1000) }
+      lastLogin: { $gte: last24HoursDate }
     });
     
-    // Get all orders for revenue calculation
-    const orders = await Order.find({});
-    const totalRevenue = orders.reduce((sum, order) => sum + (order.total || order.totalAmount || 0), 0);
+    // Get orders filtered by timeframe for revenue calculation
+    const orderDateFilter = {
+      $or: [
+        { orderDate: { $gte: startDate, $lte: now } },
+        { createdAt: { $gte: startDate, $lte: now } }
+      ]
+    };
+    
+    const orders = await Order.find(orderDateFilter);
+    const totalRevenue = orders.reduce((sum, order) => {
+      // Only count approved/delivered orders
+      const isApproved = 
+        order.payment?.status === 'approved' ||
+        order.paymentStatus === 'paid' ||
+        order.paymentStatus === 'approved' ||
+        order.orderStatus === 'delivered' ||
+        order.orderStatus === 'completed';
+      
+      if (isApproved) {
+        return sum + (order.total || order.totalAmount || order.totalAfterDiscount || 0);
+      }
+      return sum;
+    }, 0);
     
     // Calculate average order value
-    const ordersWithAmount = orders.filter(order => (order.total || order.totalAmount || 0) > 0);
+    const ordersWithAmount = orders.filter(order => {
+      const isApproved = 
+        order.payment?.status === 'approved' ||
+        order.paymentStatus === 'paid' ||
+        order.paymentStatus === 'approved' ||
+        order.orderStatus === 'delivered' ||
+        order.orderStatus === 'completed';
+      return isApproved && (order.total || order.totalAmount || order.totalAfterDiscount || 0) > 0;
+    });
+    
     const avgOrderValue = ordersWithAmount.length > 0
       ? totalRevenue / ordersWithAmount.length
       : 0;
     
     // Premium users (you can customize this based on your subscription logic)
-    const premiumUsers = await User.countDocuments({ role: 'admin' }); // Placeholder
+    const premiumUsers = await User.countDocuments({ 
+      $or: [
+        { subscription: 'premium' },
+        { role: 'admin' }
+      ]
+    });
     
     // Verified users (all users are considered verified for now)
     const verifiedUsers = totalUsers;

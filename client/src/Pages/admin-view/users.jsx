@@ -58,7 +58,7 @@ function AdminUsers() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRole, setFilterRole] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [timeFilter, setTimeFilter] = useState("30d");
+  const [timeFilter, setTimeFilter] = useState("all");
   const [selectedUserId, setSelectedUserId] = useState(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
 
@@ -156,6 +156,18 @@ function AdminUsers() {
 
   const displayStats = getTimeBasedStats();
 
+  const getTimeframeLabel = () => {
+    const labels = {
+      "24h": "آخر 24 ساعة",
+      "7d": "آخر 7 أيام",
+      "30d": "آخر 30 يوم",
+      "3m": "آخر 3 أشهر",
+      "1y": "آخر سنة",
+      "all": "منذ الإنشاء"
+    };
+    return labels[timeFilter] || "منذ الإنشاء";
+  };
+
   const getStatusBadge = (status) => {
     switch (status) {
       case "active":
@@ -218,22 +230,25 @@ function AdminUsers() {
         <div className="flex justify-center overflow-x-auto pb-2">
           <div className="flex bg-muted/50 dark:bg-muted/30 rounded-xl p-1 gap-1">
             {[
-              { key: "1h", label: "1س", icon: Clock, fullLabel: "آخر ساعة" },
+              { key: "24h", label: "24س", icon: Clock, fullLabel: "آخر 24 ساعة" },
               { key: "7d", label: "7أ", icon: Calendar, fullLabel: "آخر 7 أيام" },
-              { key: "30d", label: "30ي", icon: BarChart3, fullLabel: "آخر 30 يوم" }
+              { key: "30d", label: "30ي", icon: BarChart3, fullLabel: "آخر 30 يوم" },
+              { key: "3m", label: "3ش", icon: TrendingUp, fullLabel: "آخر 3 أشهر" },
+              { key: "1y", label: "سنة", icon: LineChart, fullLabel: "آخر سنة" },
+              { key: "all", label: "الكل", icon: Star, fullLabel: "منذ الإنشاء" }
             ].map(({ key, label, fullLabel, icon: Icon }) => (
               <Button
                 key={key}
                 onClick={() => setTimeFilter(key)}
                 variant={timeFilter === key ? "default" : "ghost"}
-                className={`px-3 sm:px-4 md:px-6 py-2 rounded-lg transition-all text-xs sm:text-sm whitespace-nowrap ${
+                className={`px-2 sm:px-3 md:px-4 py-2 rounded-lg transition-all flex items-center gap-1 sm:gap-2 text-xs sm:text-sm whitespace-nowrap ${
                   timeFilter === key 
                     ? "bg-primary text-primary-foreground shadow-md" 
                     : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 }`}
                 title={fullLabel}
               >
-                <Icon className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2 flex-shrink-0" />
+                <Icon className="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0" />
                 <span className="hidden sm:inline">{fullLabel}</span>
                 <span className="sm:hidden">{label}</span>
               </Button>
@@ -257,7 +272,7 @@ function AdminUsers() {
             <p className="text-muted-foreground text-xs sm:text-sm">إجمالي المستخدمين</p>
             <div className="mt-2 text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
               <TrendingUp className="w-3 h-3" />
-              {stats?.newUsers || 0} جديد
+              {stats?.newUsers || 0} جديد ({getTimeframeLabel()})
             </div>
           </div>
 
@@ -288,12 +303,14 @@ function AdminUsers() {
               <LineChart className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
             </div>
             <h3 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
-              {timeFilter === "1h" ? (stats?.lastHourActive || 0) : 
-               timeFilter === "7d" ? (stats?.newUsers || 0) : (stats?.newUsers || 0)}
+              {timeFilter === "24h" ? (stats?.lastHourActive || 0) : (stats?.newUsers || 0)}
             </h3>
             <p className="text-muted-foreground text-xs sm:text-sm">
-              {timeFilter === "1h" ? "نشط في آخر ساعة" : 
-               timeFilter === "7d" ? "جديد في 7 أيام" : "جديد في 30 يوم"}
+              {timeFilter === "24h" ? "نشط في آخر 24 ساعة" : 
+               timeFilter === "7d" ? "جديد في 7 أيام" : 
+               timeFilter === "30d" ? "جديد في 30 يوم" :
+               timeFilter === "3m" ? "جديد في 3 أشهر" :
+               timeFilter === "1y" ? "جديد في سنة" : "منذ الإنشاء"}
             </p>
             <div className="mt-2 text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
               <TrendingUp className="w-3 h-3" />
@@ -315,7 +332,7 @@ function AdminUsers() {
             <p className="text-muted-foreground text-xs sm:text-sm">إجمالي الإيرادات</p>
             <div className="mt-2 text-xs text-purple-600 dark:text-purple-400 flex items-center gap-1">
               <TrendingUp className="w-3 h-3" />
-              +22% من الشهر الماضي
+              {getTimeframeLabel()}
             </div>
           </div>
         </div>
