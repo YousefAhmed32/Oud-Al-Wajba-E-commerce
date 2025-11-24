@@ -39,8 +39,18 @@ function AdminHeader({ setOpen }) {
   const searchTimeoutRef = useRef(null);
   const searchInputRef = useRef(null);
 
-  function handleLogout() {
-    dispatch(logoutUser());
+  async function handleLogout() {
+    try {
+      await dispatch(logoutUser()).unwrap();
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      // Clear any local storage
+      localStorage.clear();
+      sessionStorage.clear();
+      // Navigate to home page and reload to ensure clean state
+      window.location.href = "/";
+    }
   }
 
   function handleRefresh() {

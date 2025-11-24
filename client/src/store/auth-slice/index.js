@@ -162,11 +162,21 @@ const authSlice = createSlice({
         state.isAuthenticated = false;
 
       })
+      .addCase(logoutUser.pending, (state) => {
+        state.isLoading = true;
+      })
       .addCase(logoutUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.user = null;
         state.isAuthenticated = false;
-
+        state.error = null;
+      })
+      .addCase(logoutUser.rejected, (state, action) => {
+        state.isLoading = false;
+        // Even if logout fails, clear the user state
+        state.user = null;
+        state.isAuthenticated = false;
+        state.error = action.payload?.message || "Logout failed";
       })
   },
 });

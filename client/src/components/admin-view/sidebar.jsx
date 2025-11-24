@@ -19,6 +19,8 @@ import {
 import { ChartNoAxesCombined } from "lucide-react";
 import { Fragment, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { logoutUser } from "@/store/auth-slice";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "../ui/sheet";
 import { Button } from "../ui/button";
 
@@ -82,7 +84,13 @@ function MenuItems({ setOpen, isCollapsed = false }) {
 
 function AdminSidebar({ open, setOpen }) {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const handleLogout = () => {
+    dispatch(logoutUser());
+    navigate("/");
+  };
 
   return (
     <Fragment>
@@ -112,7 +120,10 @@ function AdminSidebar({ open, setOpen }) {
               <button className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors w-full">
                 <HelpCircle size={18} /> <span>المساعدة</span>
               </button>
-              <button className="flex items-center gap-2 text-destructive hover:text-destructive/80 transition-colors w-full">
+              <button 
+                onClick={handleLogout}
+                className="flex items-center gap-2 text-destructive hover:text-destructive/80 transition-colors w-full"
+              >
                 <LogOut size={18} /> <span>تسجيل الخروج</span>
               </button>
               <p className="mt-6 text-xs text-muted-foreground text-center">©2025 عود الوجبة by YANYS</p>
@@ -168,8 +179,22 @@ function AdminSidebar({ open, setOpen }) {
 
         <MenuItems isCollapsed={isCollapsed} />
 
+        {/* Logout Button */}
+        <div className={`mt-auto border-t border-border pt-4 ${isCollapsed ? 'px-0' : 'px-2'}`}>
+          <button
+            onClick={handleLogout}
+            className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-2 text-sm font-medium rounded-lg cursor-pointer transition-all duration-200 w-full text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20 hover:text-destructive ${
+              isCollapsed ? 'justify-center' : ''
+            }`}
+            title={isCollapsed ? "تسجيل الخروج" : ""}
+          >
+            <LogOut className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+            {!isCollapsed && <span className="truncate">تسجيل الخروج</span>}
+          </button>
+        </div>
+
         {/* Footer */}
-        <div className={`mt-auto border-t border-border pt-6 text-muted-foreground text-xs ${isCollapsed ? 'text-center' : ''}`}>
+        <div className={`border-t border-border pt-4 text-muted-foreground text-xs ${isCollapsed ? 'text-center' : ''}`}>
           {!isCollapsed && (
             <>
               <p className="mb-1">Version 1.0.0</p>

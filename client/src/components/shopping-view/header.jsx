@@ -269,8 +269,7 @@ function HeaderRightContent({ isMobile = false }) {
           >
             <LogOut className="h-5 w-5 text-red-500 group-hover:rotate-12 group-hover:text-red-400 transition-transform" />
             <span className="text-sm text-gray-800 dark:text-gray-200 group-hover:text-red-400">
-              تسجيل الخروج
-            </span>
+              تسجيل الخروج        </span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
